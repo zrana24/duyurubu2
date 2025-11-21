@@ -20,12 +20,10 @@ class BluetoothService {
   factory BluetoothService() => _instance;
   BluetoothService._internal();
 
-  // Bluetooth state
   blue_plus.BluetoothAdapterState _bluetoothState = blue_plus.BluetoothAdapterState.unknown;
   List<blue_plus.BluetoothDevice> _pairedDevicesList = [];
   List<blue_plus.ScanResult> _scanResults = [];
 
-  // Connection state
   BluetoothServiceState _connectionState = BluetoothServiceState.disconnected;
   blue_plus.BluetoothDevice? _connectedDevice;
   bool _isConnecting = false;
@@ -381,7 +379,6 @@ class BluetoothService {
         _stopScan();
         _monitorConnectionState(device);
 
-        // Serial bağlantıyı kur
         connectedDeviceMacAddress = device.remoteId.str;
         await connectToCsServer(device.remoteId.str);
 
@@ -428,20 +425,16 @@ class BluetoothService {
     }
   }
 
-  // PERSISTENT Serial Connection - connectToCsServer
   Future<void> connectToCsServer(String address) async {
-    // Zaten aktif ve aynı adrese bağlıysa, yeni bağlantı kurma
     if (_isConnectionActive && _connection != null && _connection!.isConnected) {
       print('✅ Serial bağlantı zaten aktif');
       return;
     }
 
     try {
-      // Eski bağlantıyı tamamen temizle
-      await _closeSerialConnection();
+      //await _closeSerialConnection();
 
-      // Temizlik sonrası bekle
-      await Future.delayed(Duration(milliseconds: 1000));
+      await Future.delayed(Duration(milliseconds: 500));
 
       print('📡 Serial bağlantı kuruluyor: $address');
       _connection = await bluetooth_serial.BluetoothConnection.toAddress(address);
@@ -453,7 +446,6 @@ class BluetoothService {
       _isConnectionActive = true;
       print('✅ Serial bağlantı kuruldu: $address');
 
-      // Veri dinleyicisini kur
       _dataSubscription = _connection!.input!.listen(
             (Uint8List data) {
           String message = String.fromCharCodes(data).trim();
@@ -474,7 +466,6 @@ class BluetoothService {
         cancelOnError: false,
       );
 
-      // Bağlantının stabil olmasını bekle
       await Future.delayed(Duration(milliseconds: 500));
 
     } catch (e) {
@@ -485,16 +476,14 @@ class BluetoothService {
     }
   }
 
-  // Serial bağlantıyı kapat
+
   Future<void> _closeSerialConnection() async {
     try {
-      // Önce listener'ı iptal et
       if (_dataSubscription != null) {
         await _dataSubscription!.cancel();
         _dataSubscription = null;
       }
 
-      // Sonra bağlantıyı kapat
       if (_connection != null) {
         try {
           if (_connection!.isConnected) {
@@ -510,7 +499,6 @@ class BluetoothService {
       _isConnectionActive = false;
       print('🔌 Serial bağlantı kapatıldı');
 
-      // Temizlik sonrası kısa bekleme
       await Future.delayed(Duration(milliseconds: 300));
     } catch (e) {
       print('⚠️ Serial bağlantı kapatma hatası: $e');
@@ -519,7 +507,6 @@ class BluetoothService {
     }
   }
 
-  // Hizmetleri Keşfet
   Future<void> discoverServicesAfterConnection(blue_plus.BluetoothDevice device) async {
     try {
       await Future.delayed(Duration(milliseconds: 500));
@@ -529,7 +516,6 @@ class BluetoothService {
     }
   }
 
-  // Bağlantı Durumunu İzle
   void _monitorConnectionState(blue_plus.BluetoothDevice device) {
     _connectionSubscription?.cancel();
     _connectionSubscription = device.connectionState.listen((state) {
@@ -540,7 +526,6 @@ class BluetoothService {
     });
   }
 
-  // Bağlantı Kontrolü
   Future<bool> isConnectedToDevice() async {
     if (_connectedDevice == null) {
       return false;
@@ -581,7 +566,6 @@ class BluetoothService {
     _isConnecting = false;
     _connectionSubscription?.cancel();
 
-    // Serial bağlantıyı kapat
     _closeSerialConnection();
 
     _updateConnectionState(BluetoothServiceState.disconnected);
@@ -598,11 +582,9 @@ class BluetoothService {
 
   void _handleIncomingData(String message) {
     try {
-      // Önce direk JSON parse dene
       Map<String, dynamic> jsonData = jsonDecode(message);
       print('📊 JSON verisi alındı: $jsonData');
 
-      // Path varsa kaydet
       if (jsonData.containsKey('path')) {
         receivedVideoPath = jsonData['path'];
         print('✅ Path kaydedildi: $receivedVideoPath');
@@ -614,7 +596,6 @@ class BluetoothService {
     } catch (e) {
       print('⚠️ JSON parse hatası, regex deneniyor: $e');
 
-      // Regex ile path çıkar
       try {
         RegExp pathRegex = RegExp(r'"path"\s*:\s*"([^"]+)"');
         Match? match = pathRegex.firstMatch(message);
@@ -628,10 +609,8 @@ class BluetoothService {
     }
   }
 
-  // Veri gönderme - Mevcut bağlantıyı kullan
   Future<void> sendDataToDevice(String macAddress, Map<String, dynamic> data) async {
     try {
-      // Bağlantı kontrolü
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
         print('⚠️ Bağlantı aktif değil, yeniden kuruluyor...');
         await connectToCsServer(macAddress);
@@ -642,9 +621,9 @@ class BluetoothService {
       await _connection!.output.allSent;
       print('✅ Veri başarıyla gönderildi: $jsonData');
 
-      // Küçük bir bekleme ekle
       await Future.delayed(Duration(milliseconds: 100));
-    } catch (e) {
+    }
+    catch (e) {
       print('❌ Veri gönderme hatası: $e');
       _isConnectionActive = false;
       throw e;
@@ -669,14 +648,13 @@ class BluetoothService {
       };
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
-      print('✅ İsimlik eklendi');
+      print('İsimlik eklendi');
     } catch (e) {
-      print('❌ İsimlik ekleme hatası: $e');
+      print('İsimlik ekleme hatası: $e');
       rethrow;
     }
   }
 
-  // BluetoothService sınıfındaki videosend metodunu güncelleyin
   Future<void> videosend({
     required String size,
     required String name,
@@ -685,14 +663,14 @@ class BluetoothService {
   }) async {
     try {
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
-        print("📡 Video göndermek için bağlantı kuruluyor...");
+        print("Video göndermek için bağlantı kuruluyor...");
         await connectToCsServer(connectedDeviceMacAddress!);
       }
 
       File videoFile = File(videoPath);
 
       if (!videoFile.existsSync()) {
-        throw Exception("❌ Video dosyası bulunamadı: $videoPath");
+        throw Exception("Video dosyası bulunamadı: $videoPath");
       }
 
       Uint8List fileBytes = await videoFile.readAsBytes();
@@ -709,7 +687,6 @@ class BluetoothService {
       _connection!.output.add(utf8.encode(jsonData + "\r\n"));
       await _connection!.output.allSent;
 
-      // C# tarafının FileStream hazırlaması için bekle
       print("⏳ C# FileStream hazırlanıyor...");
       await Future.delayed(Duration(seconds: 3));
 
@@ -722,13 +699,13 @@ class BluetoothService {
       DateTime startTime = DateTime.now();
 
       while (offset < totalBytes) {
-        // Bağlantı kontrolü ve otomatik yeniden bağlanma
         if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
           print("⚠️ Bağlantı koptu, yeniden bağlanılıyor...");
           try {
             await connectToCsServer(connectedDeviceMacAddress!);
             await Future.delayed(Duration(milliseconds: 1000));
-          } catch (e) {
+          }
+          catch (e) {
             throw Exception("❌ Bağlantı koptu ve yeniden kurulamadı!");
           }
         }
@@ -746,9 +723,8 @@ class BluetoothService {
         } catch (e) {
           print("❌ Chunk gönderme hatası: $e");
 
-          // Bağlantıyı yeniden kur ve chunk'ı tekrar gönder
           try {
-            print("🔄 Bağlantı yeniden kuruluyor...");
+            print("Bağlantı yeniden kuruluyor...");
             await connectToCsServer(connectedDeviceMacAddress!);
             await Future.delayed(Duration(milliseconds: 1000));
 
@@ -763,7 +739,6 @@ class BluetoothService {
         offset += bytesToSend;
         double percent = offset / totalBytes * 100;
 
-        // Her %5'te bir veya son chunk'ta progress güncelle
         int currentProgress = (percent / 5).floor();
         if (currentProgress > lastProgressUpdate || offset == totalBytes) {
           lastProgressUpdate = currentProgress;
@@ -775,7 +750,6 @@ class BluetoothService {
 
           print("📤 ${percent.toStringAsFixed(1)}% (${(offset / 1024 / 1024).toStringAsFixed(2)} MB) - ${speed.toStringAsFixed(2)} MB/s");
 
-          // Progress callback'i çağır
           if (onProgress != null) {
             onProgress(percent);
           }
@@ -790,7 +764,6 @@ class BluetoothService {
       print("\n✅ Video tamamen gönderildi: $name");
       print("📊 ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB - Süre: ${totalTime.inSeconds}s - Ort. Hız: ${avgSpeed.toStringAsFixed(2)} MB/s");
 
-      // Sunucu yanıtını bekle
       final completer = Completer<void>();
       StreamSubscription<String>? responseSubscription;
 
@@ -860,12 +833,11 @@ class BluetoothService {
       };
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
-      print("✅ Bilgi başarıyla eklendi");
+      print("Bilgi başarıyla eklendi");
 
-      // Path'i temizle
       receivedVideoPath = null;
     } catch (e) {
-      print("❌ Bilgi ekleme hatası: $e");
+      print("Bilgi ekleme hatası: $e");
       rethrow;
     }
   }
@@ -897,9 +869,8 @@ class BluetoothService {
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
       print("Parlaklık başarıyla eklendi");
-
-      receivedVideoPath = null;
-    } catch (e) {
+    }
+    catch (e) {
       print("Parlaklık ekleme hatası: $e");
       rethrow;
     }
@@ -910,7 +881,7 @@ class BluetoothService {
   }) async {
     try {
       Map<String, dynamic> data = {
-        "type": "volume",
+        "type": "volme",
         "value": value,
       };
 

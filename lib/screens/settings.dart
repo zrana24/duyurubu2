@@ -20,7 +20,6 @@ class _SettingsPageState extends State<SettingsPage> {
   double _infoScreenBrightness = 1.0;
   double _infoScreenVolume = 1.0;
 
-  // Singleton instance'ı kullan
   BluetoothService get _bluetoothService => BluetoothService();
 
   @override
@@ -75,7 +74,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       setState(() {
                         _mainScreenBrightness = value;
                       });
-                      // Doğrudan parlaklik fonksiyonunu çağır
+                    },
+                    onBrightnessChangeEnd: (value) {
                       _bluetoothService.parlaklik(
                         id: '0',
                         value: (value * 100).round().toString(),
@@ -85,7 +85,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       setState(() {
                         _mainScreenVolume = value;
                       });
-                      // Doğrudan volume fonksiyonunu çağır
+                    },
+                    onVolumeChangeEnd: (value) {
                       _bluetoothService.volume(
                         value: (value * 100).round().toString(),
                       );
@@ -109,7 +110,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       setState(() {
                         _nameScreenBrightness = value;
                       });
-                      // Doğrudan parlaklik fonksiyonunu çağır
+                    },
+                    onBrightnessChangeEnd: (value) {
                       _bluetoothService.parlaklik(
                         id: '1',
                         value: (value * 100).round().toString(),
@@ -120,6 +122,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         _nameScreenVolume = value;
                       });
                     },
+                    onVolumeChangeEnd: (value) {},
                     languageProvider: languageProvider,
                     fillAvailableSpace: true,
                     showVolume: false,
@@ -139,7 +142,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       setState(() {
                         _infoScreenBrightness = value;
                       });
-                      // Doğrudan parlaklik fonksiyonunu çağır
+                    },
+                    onBrightnessChangeEnd: (value) {
                       _bluetoothService.parlaklik(
                         id: '2',
                         value: (value * 100).round().toString(),
@@ -150,6 +154,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         _infoScreenVolume = value;
                       });
                     },
+                    onVolumeChangeEnd: (value) {},
                     languageProvider: languageProvider,
                     fillAvailableSpace: true,
                     showVolume: false,
@@ -194,7 +199,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             setState(() {
                               _mainScreenBrightness = value;
                             });
-                            // Doğrudan parlaklik fonksiyonunu çağır
+                          },
+                          onBrightnessChangeEnd: (value) {
                             _bluetoothService.parlaklik(
                               id: '0',
                               value: (value * 100).round().toString(),
@@ -204,7 +210,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             setState(() {
                               _mainScreenVolume = value;
                             });
-                            // Doğrudan volume fonksiyonunu çağır
+                          },
+                          onVolumeChangeEnd: (value) {
                             _bluetoothService.volume(
                               value: (value * 100).round().toString(),
                             );
@@ -222,24 +229,20 @@ class _SettingsPageState extends State<SettingsPage> {
                           context,
                           title: languageProvider.getTranslation('name_screen1'),
                           brightnessValue: _nameScreenBrightness,
-                          volumeValue: _nameScreenVolume,
+                          volumeValue: 0.0 ,
                           onBrightnessChanged: (value) {
                             setState(() {
                               _nameScreenBrightness = value;
                             });
+                          },
+                          onBrightnessChangeEnd: (value) {
                             _bluetoothService.parlaklik(
                               id: '1',
                               value: (value * 100).round().toString(),
                             );
                           },
-                          onVolumeChanged: (value) {
-                            setState(() {
-                              _nameScreenVolume = value;
-                            });
-                            _bluetoothService.volume(
-                              value: (value * 100).round().toString(),
-                            );
-                          },
+                          onVolumeChanged: (value) {},
+                          onVolumeChangeEnd: (value) {},
                           languageProvider: languageProvider,
                           isTablet: true,
                           fillAvailableSpace: true,
@@ -253,21 +256,20 @@ class _SettingsPageState extends State<SettingsPage> {
                           context,
                           title: languageProvider.getTranslation('info_screen'),
                           brightnessValue: _infoScreenBrightness,
-                          volumeValue: _infoScreenVolume,
+                          volumeValue: 0.0 ,
                           onBrightnessChanged: (value) {
                             setState(() {
                               _infoScreenBrightness = value;
                             });
+                          },
+                          onBrightnessChangeEnd: (value) {
                             _bluetoothService.parlaklik(
                               id: '2',
                               value: (value * 100).round().toString(),
                             );
                           },
-                          onVolumeChanged: (value) {
-                            setState(() {
-                              _infoScreenVolume = value;
-                            });
-                          },
+                          onVolumeChanged: (value) {},
+                          onVolumeChangeEnd: (value) {},
                           languageProvider: languageProvider,
                           isTablet: true,
                           fillAvailableSpace: true,
@@ -292,7 +294,9 @@ class _SettingsPageState extends State<SettingsPage> {
         required double brightnessValue,
         required double volumeValue,
         required ValueChanged<double> onBrightnessChanged,
+        required ValueChanged<double> onBrightnessChangeEnd,
         required ValueChanged<double> onVolumeChanged,
+        required ValueChanged<double> onVolumeChangeEnd,
         required LanguageProvider languageProvider,
         bool isTablet = false,
         bool fillAvailableSpace = false,
@@ -449,6 +453,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                     min: 0.0,
                                                     max: 1.0,
                                                     onChanged: onBrightnessChanged,
+                                                    onChangeEnd: onBrightnessChangeEnd,
                                                   ),
                                                 ),
                                               ),
@@ -573,6 +578,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                       min: 0.0,
                                                       max: 1.0,
                                                       onChanged: onVolumeChanged,
+                                                      onChangeEnd: onVolumeChangeEnd,
                                                     ),
                                                   ),
                                                 ),
