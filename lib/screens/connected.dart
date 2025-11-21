@@ -676,6 +676,7 @@ class BluetoothService {
     }
   }
 
+  // BluetoothService sınıfındaki videosend metodunu güncelleyin
   Future<void> videosend({
     required String size,
     required String name,
@@ -683,7 +684,6 @@ class BluetoothService {
     Function(double)? onProgress,
   }) async {
     try {
-      // Bağlantı kontrolü
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
         print("📡 Video göndermek için bağlantı kuruluyor...");
         await connectToCsServer(connectedDeviceMacAddress!);
@@ -698,7 +698,6 @@ class BluetoothService {
       Uint8List fileBytes = await videoFile.readAsBytes();
       int totalBytes = fileBytes.length;
 
-      // Video header gönder - C# ile uyumlu format
       Map<String, dynamic> data = {
         "type": "video",
         "size": totalBytes,
@@ -710,8 +709,7 @@ class BluetoothService {
       _connection!.output.add(utf8.encode(jsonData + "\r\n"));
       await _connection!.output.allSent;
 
-      // CRITICAL: C# tarafının FileStream hazırlaması için bekle
-      // C# while döngüsünün video byte'larını okumaya hazır olması gerekiyor
+      // C# tarafının FileStream hazırlaması için bekle
       print("⏳ C# FileStream hazırlanıyor...");
       await Future.delayed(Duration(seconds: 3));
 
@@ -719,7 +717,7 @@ class BluetoothService {
       print("📏 Toplam Boyut: ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB");
 
       int offset = 0;
-      int chunkSize = 512; // Daha küçük chunk size (512 -> 256)
+      int chunkSize = 512;
       int lastProgressUpdate = 0;
       DateTime startTime = DateTime.now();
 
@@ -744,7 +742,7 @@ class BluetoothService {
         try {
           _connection!.output.add(chunk);
           await _connection!.output.allSent;
-          await Future.delayed(Duration(milliseconds: 10)); // 5ms -> 10ms
+          await Future.delayed(Duration(milliseconds: 10));
         } catch (e) {
           print("❌ Chunk gönderme hatası: $e");
 
@@ -765,6 +763,7 @@ class BluetoothService {
         offset += bytesToSend;
         double percent = offset / totalBytes * 100;
 
+        // Her %5'te bir veya son chunk'ta progress güncelle
         int currentProgress = (percent / 5).floor();
         if (currentProgress > lastProgressUpdate || offset == totalBytes) {
           lastProgressUpdate = currentProgress;
@@ -776,6 +775,7 @@ class BluetoothService {
 
           print("📤 ${percent.toStringAsFixed(1)}% (${(offset / 1024 / 1024).toStringAsFixed(2)} MB) - ${speed.toStringAsFixed(2)} MB/s");
 
+          // Progress callback'i çağır
           if (onProgress != null) {
             onProgress(percent);
           }
@@ -829,6 +829,20 @@ class BluetoothService {
     }
   }
 
+  Future<void> photoSend({
+    required String imagePath,
+    required String imageName,
+  }) async {
+    try {
+      print('Fotoğraf gönderiliyor: $imageName, yol: $imagePath');
+      receivedVideoPath=imagePath;
+
+    } catch (e) {
+      print('Fotoğraf gönderme hatası: $e');
+      rethrow;
+    }
+  }
+
   Future<void> bilgiAdd({
     required String meeting_title,
     required String start_hour,
@@ -852,6 +866,20 @@ class BluetoothService {
       receivedVideoPath = null;
     } catch (e) {
       print("❌ Bilgi ekleme hatası: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> veri() async {
+    try {
+      Map<String, dynamic> data = {
+        "type": "full_data",
+      };
+
+      await sendDataToDevice(connectedDeviceMacAddress!, data);
+
+    }
+    catch (e) {
       rethrow;
     }
   }
@@ -894,6 +922,19 @@ class BluetoothService {
       rethrow;
     }
   }
+
+  /*Future<void> veri() async {
+    try {
+      Map<String, dynamic> data = {
+        "type": "full_data",
+      };
+
+      await sendDataToDevice(connectedDeviceMacAddress!, data);
+
+    } catch (e) {
+      rethrow;
+    }
+  }*/
 
   void dispose() {
     _continuousScanTimer?.cancel();

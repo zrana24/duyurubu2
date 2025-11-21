@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
-import '../bluetooth_provider.dart';
 import 'image.dart';
-import '../screens/management.dart';
-import '../screens/settings.dart';
-import '../screens/connect.dart';
 
 class LanguageProvider extends ChangeNotifier {
   Locale _locale = const Locale('tr', 'TR');
@@ -284,15 +280,11 @@ class LanguageProvider extends ChangeNotifier {
   }
 }
 
-class LanguagePage extends StatefulWidget {
+
+class LanguagePage extends StatelessWidget {
   const LanguagePage({Key? key}) : super(key: key);
 
-  @override
-  _LanguagePageState createState() => _LanguagePageState();
-}
-
-class _LanguagePageState extends State<LanguagePage> {
-  final List<Map<String, String>> languages = [
+  static const List<Map<String, String>> _languages = [
     {'code': 'tr', 'name': 'TÜRKÇE', 'flag': '🇹🇷'},
     {'code': 'en', 'name': 'ENGLISH', 'flag': '🇺🇸'},
     {'code': 'ru', 'name': 'РУССКИЙ', 'flag': '🇷🇺'},
@@ -335,15 +327,15 @@ class _LanguagePageState extends State<LanguagePage> {
                   vertical: screenHeight * 0.01,
                 ),
                 child: ListView.builder(
-                  itemCount: languages.length,
+                  itemCount: _languages.length,
                   padding: EdgeInsets.all(screenWidth * 0.03),
                   itemBuilder: (context, index) {
-                    final lang = languages[index];
+                    final lang = _languages[index];
                     bool isSelected =
                         languageProvider.locale.languageCode == lang['code'];
                     return Container(
                       margin: EdgeInsets.only(bottom: screenHeight * 0.015),
-                      child: _buildLanguageCard(lang, isSelected, isTablet),
+                      child: _buildLanguageCard(context, lang, isSelected, isTablet, screenWidth, screenHeight),
                     );
                   },
                 ),
@@ -355,10 +347,7 @@ class _LanguagePageState extends State<LanguagePage> {
     );
   }
 
-  Widget _buildLanguageCard(Map<String, String> lang, bool isSelected, bool isTablet) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
+  Widget _buildLanguageCard(BuildContext context, Map<String, String> lang, bool isSelected, bool isTablet, double screenWidth, double screenHeight) {
     return GestureDetector(
       onTap: () => _selectLanguage(context, lang),
       child: Container(

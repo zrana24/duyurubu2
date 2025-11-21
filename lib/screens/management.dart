@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../language.dart';
@@ -7,6 +8,54 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'connected.dart';
+
+class TimeTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    String digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.length > 6) digits = digits.substring(0, 6);
+
+    String formatted = '';
+    int len = digits.length;
+
+    if (len >= 1) {
+      formatted += digits.substring(0, len >= 2 ? 2 : 1);
+    }
+    if (len >= 2) {
+      int hour = int.parse(digits.substring(0, 2));
+      if (hour > 23) hour = 23;
+      formatted = hour.toString().padLeft(2, '0');
+    }
+
+    if (len >= 3) {
+      formatted += ":" + digits.substring(2, len >= 4 ? 4 : 3);
+    }
+    if (len >= 4) {
+      int minute = int.parse(digits.substring(2, 4));
+      if (minute > 59) minute = 59;
+      formatted = formatted.substring(0, 3) + minute.toString().padLeft(2, '0');
+    }
+
+    if (len >= 5) {
+      formatted += ":" + digits.substring(4, len >= 6 ? 6 : 5);
+    }
+    if (len == 6) {
+      int second = int.parse(digits.substring(4, 6));
+      if (second > 59) second = 59;
+      formatted =
+          formatted.substring(0, 6) + second.toString().padLeft(2, '0');
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class Management extends StatefulWidget {
   const Management({Key? key}) : super(key: key);
@@ -120,11 +169,13 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   }
 
   void _showAddSpeakerDialog() {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     String department = '';
     String name = '';
-    String time = '00:00:00';
+    String time = '';
     bool isLoading = false;
+    bool toggleValue = true;
+
+    final timeController = TextEditingController(text: '');
 
     showDialog(
       context: context,
@@ -153,66 +204,74 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           SizedBox(height: 8),
                           TextField(
                             enabled: !isLoading,
-                            style: TextStyle(color: Colors.black),
-                            cursorColor: Colors.black,
                             decoration: InputDecoration(
                               labelText: 'Bölüm/Departman',
-                              labelStyle: TextStyle(color: Colors.grey),
-                              floatingLabelStyle: TextStyle(color: Colors.black),
                               border: OutlineInputBorder(),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.black, width: 2),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey.shade400),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
-                            onChanged: (value) => department = value,
+                            onChanged: (v) => department = v,
                           ),
                           SizedBox(height: 20),
                           TextField(
                             enabled: !isLoading,
-                            style: TextStyle(color: Colors.black),
-                            cursorColor: Colors.black,
                             decoration: InputDecoration(
                               labelText: 'Ad Soyad',
-                              labelStyle: TextStyle(color: Colors.grey),
-                              floatingLabelStyle: TextStyle(color: Colors.black),
                               border: OutlineInputBorder(),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.black, width: 2),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey.shade400),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
-                            onChanged: (value) => name = value,
+                            onChanged: (v) => name = v,
                           ),
                           SizedBox(height: 20),
+
+                          // 🔥 YENİ SAAT FORMATLI TEXTFIELD
                           TextField(
                             enabled: !isLoading,
-                            style: TextStyle(color: Colors.black),
-                            cursorColor: Colors.black,
+                            controller: timeController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [TimeTextInputFormatter()],
                             decoration: InputDecoration(
-                              labelText: 'Süre (HH:MM:SS)',
-                              hintText: '00:30:00',
-                              labelStyle: TextStyle(color: Colors.grey),
-                              floatingLabelStyle: TextStyle(color: Colors.black),
-                              hintStyle: TextStyle(color: Colors.grey.shade400),
+                              labelText: '00:00:00',
                               border: OutlineInputBorder(),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.black, width: 2),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey.shade400),
-                              ),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
-                            onChanged: (value) => time = value,
+                            onChanged: (value) {
+                              time = value;
+                            },
                           ),
-                          SizedBox(height: 8),
+                          SizedBox(height: 20),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Aktif Durum', style: TextStyle(fontSize: 16)),
+                              GestureDetector(
+                                onTap: () {
+                                  setDialogState(() {
+                                    toggleValue = !toggleValue;
+                                  });
+                                },
+                                child: Container(
+                                  width: 50,
+                                  height: 26,
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: toggleValue ? const Color(0xFF196E64) : Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: AnimatedAlign(
+                                    duration: Duration(milliseconds: 200),
+                                    alignment: toggleValue ? Alignment.centerRight : Alignment.centerLeft,
+                                    child: Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
                           if (isLoading)
                             Padding(
                               padding: const EdgeInsets.only(top: 16),
@@ -230,77 +289,55 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                     ),
                     actions: [
                       TextButton(
-                        onPressed: isLoading ? null : () {
+                        onPressed: isLoading
+                            ? null
+                            : () {
                           Navigator.of(context).pop();
                         },
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
                         child: Text('İptal'),
                       ),
                       ElevatedButton(
-                        onPressed: isLoading ? null : () async {
-
-                          if (department.trim().isEmpty || name.trim().isEmpty || time.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Lütfen tüm alanları doldurun'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 2),
-                            ));
+                        onPressed: isLoading
+                            ? null
+                            : () async {
+                          if (department.isEmpty || name.isEmpty || time.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lütfen tüm alanları doldurun'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                             return;
                           }
-
-                          RegExp timeRegex = RegExp(r'^([0-1]?[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$');
-                          if (!timeRegex.hasMatch(time)) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Geçersiz zaman formatı'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 2),
-                            ));
-                            return;
-                          }
-
-                          setDialogState(() {
-                            isLoading = true;
-                          });
 
                           try {
                             await _bluetoothService.isimlikAdd(
                               name: name,
                               title: department,
-                              togle: true,
+                              togle: toggleValue,
                               isActive: false,
                               time: time,
                             );
 
-                            _saveNewSpeaker(department, name, time);
+                            _saveNewSpeaker(department, name, time, toggleValue);
 
                             Navigator.of(context).pop();
 
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Konuşmacı başarıyla eklendi ve cihaza gönderildi'),
-                              backgroundColor: Colors.green,
-                              duration: const Duration(seconds: 2),
-                            ));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Konuşmacı başarıyla eklendi'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
                           } catch (e) {
-
-                            setDialogState(() {
-                              isLoading = false;
-                            });
-
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text('Hata: ${e.toString()}'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
-                            ));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Hata: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         },
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          backgroundColor: isLoading ? Colors.grey : Colors.grey.shade200,
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        ),
                         child: Text('Ekle'),
                       ),
                     ],
@@ -314,14 +351,15 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     );
   }
 
-  void _saveNewSpeaker(String department, String name, String time) {
+
+  void _saveNewSpeaker(String department, String name, String time, bool toggleValue) {
     setState(() {
       _speakers.add({
         'department': department.trim(),
         'name': name.trim(),
         'time': time,
         'isEditing': false,
-        'isActive': false,
+        'isActive': toggleValue,
       });
     });
   }
@@ -336,8 +374,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       return;
     }
 
-    RegExp timeRegex = RegExp(r'^([0-1]?[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$');
-    if (!timeRegex.hasMatch(time)) {
+    if (time.replaceAll(':', '').length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Geçersiz zaman formatı'),
         backgroundColor: Colors.red,
@@ -506,6 +543,11 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                       isTablet: isTablet,
                       onSave: (department, name, time) => _saveSpeaker(index, department, name, time),
                       onDelete: () => _deleteSpeaker(index),
+                      onToggleChange: (value) {
+                        setState(() {
+                          _speakers[index]['isActive'] = value;
+                        });
+                      },
                     ),
                     if (index < _speakers.length - 1)
                       Transform.translate(
@@ -537,9 +579,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   }
 }
 
-
-
-
 class ContentManagement extends StatefulWidget {
   const ContentManagement({Key? key}) : super(key: key);
 
@@ -554,7 +593,7 @@ class _ContentManagementState extends State<ContentManagement> {
       'title': 'Küresel Isınma Toplantısına Hoş Geldiniz',
       'startTime': '00:30:00',
       'endTime': '00:30:00',
-      'type': 'document',
+      'type': 'photo',
       'file': null,
       'isEditing': false,
     }
@@ -568,9 +607,10 @@ class _ContentManagementState extends State<ContentManagement> {
         'title': 'Toplantı Konusu',
         'startTime': '00:00:00',
         'endTime': '00:00:00',
-        'type': 'document',
+        'type': 'photo',
         'file': null,
         'isEditing': true,
+        'isNew': true, // Yeni eklenen içerik işaretlendi
       });
     });
   }
@@ -596,6 +636,27 @@ class _ContentManagementState extends State<ContentManagement> {
                       _contents[index]['file'] = File(image.path);
                       _contents[index]['type'] = 'photo';
                     });
+
+                    try {
+                      await _bluetoothService.photoSend(
+                        imagePath: image.path,
+                        imageName: image.name,
+                      );
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Fotoğraf başarıyla gönderildi'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Fotoğraf gönderilemedi: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
               ),
@@ -616,41 +677,43 @@ class _ContentManagementState extends State<ContentManagement> {
                       print("Boyut: $videoSize bytes ($videoSizeMB MB)");
 
                       try {
-                        final bluetoothService = BluetoothService();
-
-                        await bluetoothService.videosend(
-                          size: "${videoSizeMB}",
+                        await _bluetoothService.videosend(
+                          size: videoSizeMB,
                           name: video.name,
                           videoPath: video.path,
                         );
 
+                        setState(() {
+                          _contents[index]['file'] = videoFile;
+                          _contents[index]['type'] = 'video';
+                        });
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Video başarıyla gönderildi'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
                       }
                       catch (e, stackTrace) {
                         print("Video gönderme hatası: $e");
                         print("StackTrace:\n$stackTrace");
-                        rethrow;
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Video gönderilemedi: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       }
                     }
                     catch (e) {
                       print("Video boyut hatası: $e");
                     }
-
-                    setState(() {
-                      _contents[index]['file'] = videoFile;
-                      _contents[index]['type'] = 'video';
-                    });
                   }
                   else {
                     print("Video seçilmedi");
                   }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.description, size: 22),
-                title: const Text('Doküman Seç', style: TextStyle(fontSize: 14)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _pickDocument(index);
                 },
               ),
             ],
@@ -658,24 +721,6 @@ class _ContentManagementState extends State<ContentManagement> {
         );
       },
     );
-  }
-
-  Future<void> _pickDocument(int index) async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', 'xls', 'xlsx'],
-      );
-
-      if (result != null && result.files.single.path != null) {
-        setState(() {
-          _contents[index]['file'] = File(result.files.single.path!);
-          _contents[index]['type'] = 'document';
-        });
-      }
-    } catch (e) {
-      print("Dosya seçme hatası: $e");
-    }
   }
 
   Future<void> _saveContent(int index, String title, String startTime, String endTime) async {
@@ -720,6 +765,7 @@ class _ContentManagementState extends State<ContentManagement> {
           'type': _contents[index]['type'],
           'file': _contents[index]['file'],
           'isEditing': false,
+          'isNew': false, // Artık yeni değil
           'borderColor': _contents[index]['borderColor'] ?? const Color(0xFF5E6676),
         };
       });
@@ -734,7 +780,13 @@ class _ContentManagementState extends State<ContentManagement> {
 
   void _cancelEdit(int index) {
     setState(() {
-      _contents[index]['isEditing'] = false;
+      // Eğer yeni eklenen bir içerikse ve iptal ediliyorsa, sil
+      if (_contents[index]['isNew'] == true) {
+        _contents.removeAt(index);
+      } else {
+        // Mevcut içerikse sadece edit modundan çık
+        _contents[index]['isEditing'] = false;
+      }
     });
   }
 
@@ -995,6 +1047,7 @@ class EditableSpeakerCard extends StatefulWidget {
   final bool isTablet;
   final Function(String, String, String) onSave;
   final VoidCallback onDelete;
+  final Function(bool) onToggleChange;
 
   const EditableSpeakerCard({
     Key? key,
@@ -1003,6 +1056,7 @@ class EditableSpeakerCard extends StatefulWidget {
     required this.isTablet,
     required this.onSave,
     required this.onDelete,
+    required this.onToggleChange,
   }) : super(key: key);
 
   @override
@@ -1014,7 +1068,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
   late TextEditingController _nameController;
   late TextEditingController _timeController;
   bool _isPlaying = false;
-  bool _isSwitchActive = false;
+  late bool _isSwitchActive;
 
   @override
   void initState() {
@@ -1053,6 +1107,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     setState(() {
       _isSwitchActive = !_isSwitchActive;
     });
+    widget.onToggleChange(_isSwitchActive);
   }
 
   void _increaseTime() {
@@ -1296,11 +1351,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
 
   Widget _buildToggleSwitch() {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isSwitchActive = !_isSwitchActive;
-        });
-      },
+      onTap: _toggleSwitch,
       child: Container(
         width: widget.isTablet ? 30 : 26,
         height: widget.isTablet ? 14 : 12,
@@ -1309,7 +1360,8 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
           color: _isSwitchActive ? const Color(0xFF196E64) : Colors.grey[300],
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Align(
+        child: AnimatedAlign(
+          duration: Duration(milliseconds: 200),
           alignment: _isSwitchActive ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             width: widget.isTablet ? 10 : 8,
@@ -1744,33 +1796,44 @@ class _EditableContentCardState extends State<EditableContentCard> {
                       ),
                     ],
                   ),
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildImageIcon('assets/images/saat.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
-                      SizedBox(width: widget.isTablet ? 6.0 : 5.0),
-                      _buildDigitalTime(
-                        widget.content['startTime'] as String,
-                        borderColor == const Color(0xFF5E6676)
-                            ? const Color(0xFF3B4458)
-                            : const Color(0xFFA24D00),
-                        widget.isTablet,
-                        _isEditing,
-                        _isEditing ? _startTimeController : null,
+                      Row(
+                        children: [
+                          _buildImageIcon('assets/images/saat.png', widget
+                              .isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
+                          SizedBox(width: widget.isTablet ? 8.0 : 6.0),
+                          _buildDigitalTime(
+                            widget.content['startTime'] as String,
+                            borderColor == const Color(0xFF5E6676)
+                                ? const Color(0xFF3B4458)
+                                : const Color(0xFFA24D00),
+                            widget.isTablet,
+                            _isEditing,
+                            _isEditing ? _startTimeController : null,
+                          ),
+                        ],
                       ),
-                      SizedBox(width: widget.isTablet ? 4.0 : 3.0),
-                      _buildDigitalTime(
-                        widget.content['endTime'] as String,
-                        borderColor == const Color(0xFF5E6676)
-                            ? const Color(0xFF3B4458)
-                            : const Color(0xFFA24D00),
-                        widget.isTablet,
-                        _isEditing,
-                        _isEditing ? _endTimeController : null,
+                      SizedBox(height: widget.isTablet ? 8.0 : 6.0),
+                      Row(
+                        children: [
+                          SizedBox(width: widget.isTablet ? 24.0 : 22.0),
+                          _buildDigitalTime(
+                            widget.content['endTime'] as String,
+                            borderColor == const Color(0xFF5E6676)
+                                ? const Color(0xFF3B4458)
+                                : const Color(0xFFA24D00),
+                            widget.isTablet,
+                            _isEditing,
+                            _isEditing ? _endTimeController : null,
+                          ),
+                          if (!_isEditing) ...[
+                            const Spacer(),
+                            _buildToggleSwitch(),
+                          ],
+                        ],
                       ),
-                      if (!_isEditing) ...[
-                        const Spacer(),
-                        _buildToggleSwitch(),
-                      ],
                     ],
                   ),
                 ],
@@ -1782,19 +1845,27 @@ class _EditableContentCardState extends State<EditableContentCard> {
     );
   }
 
-  Widget _buildDigitalTime(String time, Color textColor, bool isTablet, bool isEditing, [TextEditingController? controller]) {
+  Widget _buildDigitalTime(
+      String time,
+      Color textColor,
+      bool isTablet,
+      bool isEditing, [
+        TextEditingController? controller,
+      ]) {
     if (isEditing && controller != null) {
       return SizedBox(
-        width: isTablet ? 65.0 : 50.0,
+        width: isTablet ? 75.0 : 65.0,
         child: TextField(
           controller: controller,
+          keyboardType: TextInputType.number,
+          inputFormatters: [TimeTextInputFormatter()],
           style: TextStyle(
             fontSize: isTablet ? 14.0 : 12,
             fontWeight: FontWeight.w400,
             fontFamily: 'monospace',
             color: textColor,
             height: 0.70,
-            letterSpacing: 1.0,
+            letterSpacing: 1.5,
           ),
           decoration: const InputDecoration(
             border: InputBorder.none,
