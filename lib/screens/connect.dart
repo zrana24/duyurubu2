@@ -6,6 +6,7 @@ import '../bluetooth_provider.dart';
 import '../language.dart';
 import '../image.dart';
 import 'connected.dart';
+import 'dart:async';
 
 enum SnackbarType { success, error, info }
 
@@ -14,11 +15,13 @@ class ConnectPage extends StatefulWidget {
   _ConnectPageState createState() => _ConnectPageState();
 }
 
-class  _ConnectPageState extends State<ConnectPage> {
+class _ConnectPageState extends State<ConnectPage> {
   final BluetoothService _bluetoothService = BluetoothService();
   blue_plus.BluetoothDevice? _selectedDevice;
   final ScrollController _pairedScrollController = ScrollController();
   final ScrollController _nearbyScrollController = ScrollController();
+
+  StreamSubscription<Map<String, dynamic>>? _notificationSubscription;
 
   @override
   void initState() {
@@ -26,12 +29,72 @@ class  _ConnectPageState extends State<ConnectPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initializeBluetooth();
     });
+
+    _notificationSubscription = _bluetoothService.notificationStream.listen((notification) {
+      if (!mounted) return;
+      _showNotificationSnackbar(notification);
+    });
+  }
+  
+  void _showNotificationSnackbar(Map<String, dynamic> notification) {
+    String message = notification['message'];
+    String type = notification['type'];
+
+    Color backgroundColor;
+    IconData icon;
+
+    switch (type) {
+      case 'success':
+        backgroundColor = Colors.green;
+        icon = Icons.check_circle;
+        break;
+      case 'error':
+        backgroundColor = Colors.red;
+        icon = Icons.error;
+        break;
+      case 'warning':
+        backgroundColor = Colors.orange;
+        icon = Icons.warning;
+        break;
+      default:
+        backgroundColor = Colors.blue;
+        icon = Icons.info;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: backgroundColor,
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _pairedScrollController.dispose();
     _nearbyScrollController.dispose();
+    
+    _notificationSubscription?.cancel();
     super.dispose();
   }
 
@@ -79,7 +142,6 @@ class  _ConnectPageState extends State<ConnectPage> {
       String currentDevice = bluetoothProvider.connectedDevice!.platformName;
       String selectedDevice = _bluetoothService.getDeviceDisplayName(device);
 
-
       if (bluetoothProvider.connectedDevice!.remoteId == device.remoteId) {
         _showSnackbar(
           '✅ Zaten $selectedDevice ile bağlısınız',
@@ -109,13 +171,13 @@ class  _ConnectPageState extends State<ConnectPage> {
       String deviceName = _bluetoothService.getDeviceDisplayName(device);
       print('🔗 $deviceName cihazına bağlanılıyor...');
 
-      // Provider'ı bağlanıyor durumuna ayarla
+      
       bluetoothProvider.setConnecting(true);
 
-      // BluetoothService ile bağlan
+      
       await _bluetoothService.connectToDevice(device);
 
-      // Provider'ı güncelle
+      
       bluetoothProvider.setConnectedDevice(device);
       setState(() => _selectedDevice = device);
       _showSnackbar('✅ Bağlandı: $deviceName', SnackbarType.success);
@@ -127,7 +189,7 @@ class  _ConnectPageState extends State<ConnectPage> {
       _showSnackbar('❌ $errorMessage', SnackbarType.error);
       _showConnectionErrorDialog(deviceName, errorMessage);
 
-      // Provider'ı hata durumuna ayarla
+      
       bluetoothProvider.setConnecting(false);
     }
   }
@@ -230,16 +292,18 @@ class  _ConnectPageState extends State<ConnectPage> {
       String deviceName = bluetoothProvider.connectedDevice!.platformName;
       print('🔌 $deviceName cihazından bağlantı kesiliyor');
 
-      // Önce BluetoothService'ten bağlantıyı kes
+      
       await _bluetoothService.disconnect();
 
-      // Sonra Provider'ı güncelle
+      
       bluetoothProvider.disconnect();
       _showSnackbar('🔌 $deviceName bağlantısı kesildi', SnackbarType.info);
       setState(() => _selectedDevice = null);
     }
   }
-  String  deviceAddress="";
+
+  String deviceAddress = "";
+
   int _getSignalStrength(int? rssi) {
     if (rssi == null) return 0;
     if (rssi >= -50) return 4;
@@ -357,19 +421,19 @@ class  _ConnectPageState extends State<ConnectPage> {
                   child: ImageWidget(activePage: "connect"),
                 ),
 
-                // Bluetooth durumu
+                
                 _buildBluetoothStatusBar(),
 
-                // Bağlantı durumu
+                
                 _buildConnectionStatusBar(),
 
-                // Ana içerik
+                
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       children: [
-                        // Eşleşen Cihazlar
+                        
                         Expanded(
                           flex: 1,
                           child: _buildPairedDevicesSection(
@@ -379,7 +443,7 @@ class  _ConnectPageState extends State<ConnectPage> {
                         ),
                         SizedBox(height: 16),
 
-                        // Çevredeki Cihazlar
+                        
                         Expanded(
                           flex: 1,
                           child: _buildNearbyDevicesSection(
@@ -392,7 +456,7 @@ class  _ConnectPageState extends State<ConnectPage> {
                   ),
                 ),
 
-                // Bağlantı durumu göstergesi
+                
                 Consumer<BluetoothProvider>(
                   builder: (context, provider, _) {
                     if (provider.isConnecting) {
@@ -471,7 +535,6 @@ class  _ConnectPageState extends State<ConnectPage> {
                     ),
                   ),
                 ),
-
               ],
             ),
           ),

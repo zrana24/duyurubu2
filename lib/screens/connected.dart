@@ -44,6 +44,9 @@ class BluetoothService {
   final _devicesController = StreamController<List<blue_plus.BluetoothDevice>>.broadcast();
   final _scanResultsController = StreamController<List<blue_plus.ScanResult>>.broadcast();
 
+  // ✅ YENİ EKLEME - Bildirim stream'i
+  final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
+
   // Connection - PERSISTENT CONNECTION
   bluetooth_serial.BluetoothConnection? _connection;
   bool _isConnectionActive = false;
@@ -87,9 +90,22 @@ class BluetoothService {
   Stream<List<blue_plus.ScanResult>> get scanResultsStream => _scanResultsController.stream;
   Stream<String> get incomingDataStream => _incomingDataController.stream;
 
+  // ✅ YENİ EKLEME - Bildirim stream getter
+  Stream<Map<String, dynamic>> get notificationStream => _notificationController.stream;
+
   StreamSubscription<List<blue_plus.ScanResult>>? _scanSubscription;
   StreamSubscription<blue_plus.BluetoothConnectionState>? _connectionSubscription;
   Timer? _continuousScanTimer;
+
+  // ✅ YENİ EKLEME - Bildirim gönderme metodu
+  void _sendNotification(String message, String type) {
+    _notificationController.add({
+      'message': message,
+      'type': type, // 'success', 'error', 'info', 'warning'
+      'timestamp': DateTime.now(),
+    });
+    print('📢 Bildirim: $message [$type]');
+  }
 
   Future<bool> requestPermissions() async {
     try {
@@ -113,6 +129,7 @@ class BluetoothService {
       bool hasPermissions = await requestPermissions();
       if (!hasPermissions) {
         print('❌ Bluetooth izinleri gerekli');
+        _sendNotification('❌ Bluetooth izinleri gerekli', 'error');
         return;
       }
 
@@ -141,6 +158,7 @@ class BluetoothService {
       }
     } catch (e) {
       print('❌ Bluetooth başlatma hatası: $e');
+      _sendNotification('❌ Bluetooth başlatma hatası', 'error');
     }
   }
 
@@ -432,8 +450,6 @@ class BluetoothService {
     }
 
     try {
-      //await _closeSerialConnection();
-
       await Future.delayed(Duration(milliseconds: 500));
 
       print('📡 Serial bağlantı kuruluyor: $address');
@@ -445,6 +461,12 @@ class BluetoothService {
 
       _isConnectionActive = true;
       print('✅ Serial bağlantı kuruldu: $address');
+
+      // ✅ BİLDİRİM GÖNDER
+      String deviceName = _connectedDevice != null
+          ? getDeviceDisplayName(_connectedDevice!)
+          : 'Cihaz';
+      _sendNotification('✅ $deviceName ile seri bağlantı kuruldu', 'success');
 
       _dataSubscription = _connection!.input!.listen(
             (Uint8List data) {
@@ -472,6 +494,9 @@ class BluetoothService {
       print('❌ Serial bağlantı hatası: $e');
       _isConnectionActive = false;
       _connection = null;
+
+      // ✅ HATA BİLDİRİMİ
+      _sendNotification('❌ Seri bağlantı kurulamadı', 'error');
       rethrow;
     }
   }
@@ -561,14 +586,21 @@ class BluetoothService {
   }
 
   void _handleDisconnection() {
+    String? disconnectedDeviceName;
+    if (_connectedDevice != null) {
+      disconnectedDeviceName = getDeviceDisplayName(_connectedDevice!);
+      print('🔌 Bağlantı kesildi: $disconnectedDeviceName');
+    }
+
     _connectedDevice = null;
     _connectionLocked = false;
     _isConnecting = false;
     _connectionSubscription?.cancel();
 
     _closeSerialConnection();
-
     _updateConnectionState(BluetoothServiceState.disconnected);
+
+    // ❌ BİLDİRİM YOK - İstenmediği için eklenmedi
 
     if (_bluetoothState == blue_plus.BluetoothAdapterState.on) {
       _startContinuousScanning();
@@ -626,6 +658,7 @@ class BluetoothService {
     catch (e) {
       print('❌ Veri gönderme hatası: $e');
       _isConnectionActive = false;
+      _sendNotification('❌ Veri gönderilemedi', 'error');
       throw e;
     }
   }
@@ -649,8 +682,10 @@ class BluetoothService {
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
       print('İsimlik eklendi');
+      _sendNotification('✅ İsimlik başarıyla eklendi', 'success');
     } catch (e) {
       print('İsimlik ekleme hatası: $e');
+      _sendNotification('❌ İsimlik eklenemedi', 'error');
       rethrow;
     }
   }
@@ -665,10 +700,10 @@ class BluetoothService {
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
         print("Video göndermek için bağlantı kuruluyor...");
         await connectToCsServer(connectedDeviceMacAddress!);
+        await Future.delayed(Duration(milliseconds: 1000));
       }
 
       File videoFile = File(videoPath);
-
       if (!videoFile.existsSync()) {
         throw Exception("Video dosyası bulunamadı: $videoPath");
       }
@@ -676,6 +711,7 @@ class BluetoothService {
       Uint8List fileBytes = await videoFile.readAsBytes();
       int totalBytes = fileBytes.length;
 
+      // Send metadata
       Map<String, dynamic> data = {
         "type": "video",
         "size": totalBytes,
@@ -684,29 +720,52 @@ class BluetoothService {
 
       print("📦 Video bilgileri gönderiliyor: $data");
       String jsonData = jsonEncode(data);
+
+      // Send metadata WITHOUT closing connection
       _connection!.output.add(utf8.encode(jsonData + "\r\n"));
       await _connection!.output.allSent;
 
-      print("⏳ C# FileStream hazırlanıyor...");
-      await Future.delayed(Duration(seconds: 3));
+      // Reduced wait time and added connection check
+      print("⏳ C# hazırlanıyor...");
+      await Future.delayed(Duration(milliseconds: 1500));
+
+      // Verify connection is still active
+      if (!_connection!.isConnected) {
+        print("⚠️ Metadata gönderimi sonrası bağlantı koptu, yeniden bağlanılıyor...");
+        await connectToCsServer(connectedDeviceMacAddress!);
+        await Future.delayed(Duration(milliseconds: 1000));
+      }
 
       print("📤 Video gönderimi başlıyor...");
       print("📏 Toplam Boyut: ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB");
 
+      _sendNotification('📤 Video gönderimi başladı: $name', 'info');
+
       int offset = 0;
-      int chunkSize = 512;
+      int chunkSize = 1024;
       int lastProgressUpdate = 0;
       DateTime startTime = DateTime.now();
+      int consecutiveErrors = 0;
+      const int maxConsecutiveErrors = 3;
 
       while (offset < totalBytes) {
-        if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
-          print("⚠️ Bağlantı koptu, yeniden bağlanılıyor...");
+        // Connection check before each chunk
+        if (!_connection!.isConnected) {
+          print("⚠️ Bağlantı koptu (offset: $offset), yeniden bağlanılıyor...");
+
           try {
             await connectToCsServer(connectedDeviceMacAddress!);
-            await Future.delayed(Duration(milliseconds: 1000));
-          }
-          catch (e) {
-            throw Exception("❌ Bağlantı koptu ve yeniden kurulamadı!");
+            await Future.delayed(Duration(milliseconds: 1500));
+            consecutiveErrors = 0;
+          } catch (e) {
+            consecutiveErrors++;
+            if (consecutiveErrors >= maxConsecutiveErrors) {
+              _sendNotification('❌ Video gönderilemedi - bağlantı hatası', 'error');
+              throw Exception("❌ Bağlantı ${maxConsecutiveErrors} kez yeniden kurulamadı!");
+            }
+            print("⚠️ Yeniden bağlanma denemesi ${consecutiveErrors}/${maxConsecutiveErrors}");
+            await Future.delayed(Duration(seconds: 2));
+            continue;
           }
         }
 
@@ -719,20 +778,32 @@ class BluetoothService {
         try {
           _connection!.output.add(chunk);
           await _connection!.output.allSent;
-          await Future.delayed(Duration(milliseconds: 10));
+          await Future.delayed(Duration(milliseconds: 5));
+          consecutiveErrors = 0;
+
         } catch (e) {
-          print("❌ Chunk gönderme hatası: $e");
+          print("❌ Chunk gönderme hatası (offset: $offset): $e");
+          consecutiveErrors++;
+
+          if (consecutiveErrors >= maxConsecutiveErrors) {
+            _sendNotification('❌ Video gönderimi iptal edildi', 'error');
+            throw Exception("❌ ${maxConsecutiveErrors} ardışık hata, aktarım iptal edildi");
+          }
 
           try {
-            print("Bağlantı yeniden kuruluyor...");
+            print("🔄 Bağlantı yeniden kuruluyor (deneme ${consecutiveErrors})...");
             await connectToCsServer(connectedDeviceMacAddress!);
-            await Future.delayed(Duration(milliseconds: 1000));
+            await Future.delayed(Duration(milliseconds: 1500));
 
             _connection!.output.add(chunk);
             await _connection!.output.allSent;
-            await Future.delayed(Duration(milliseconds: 10));
+            await Future.delayed(Duration(milliseconds: 5));
+
+            consecutiveErrors = 0;
           } catch (retryError) {
-            throw Exception("Veri gönderimi başarısız: $e (Retry: $retryError)");
+            print("❌ Yeniden deneme başarısız: $retryError");
+            await Future.delayed(Duration(milliseconds: 500));
+            continue;
           }
         }
 
@@ -764,42 +835,49 @@ class BluetoothService {
       print("\n✅ Video tamamen gönderildi: $name");
       print("📊 ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB - Süre: ${totalTime.inSeconds}s - Ort. Hız: ${avgSpeed.toStringAsFixed(2)} MB/s");
 
-      final completer = Completer<void>();
-      StreamSubscription<String>? responseSubscription;
+      _sendNotification('✅ Video başarıyla gönderildi: $name', 'success');
 
-      Timer? timeoutTimer = Timer(Duration(seconds: 10), () {
-        print('⚠️ Sunucu yanıtı timeout');
-        responseSubscription?.cancel();
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      });
-
-      responseSubscription = _incomingDataController.stream.listen((message) {
-        try {
-          Map<String, dynamic> response = jsonDecode(message);
-          if (response.containsKey('path')) {
-            receivedVideoPath = response['path'];
-            print('✅ Video yolu alındı: $receivedVideoPath');
-          }
-        } catch (e) {
-          print('⚠️ Yanıt parse hatası: $e');
-        }
-
-        timeoutTimer?.cancel();
-        responseSubscription?.cancel();
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      });
-
-      await completer.future;
+      await _waitForServerResponse();
 
     } catch (e, stackTrace) {
       print("❌ Video gönderme hatası: $e");
       print("StackTrace:\n$stackTrace");
+      _sendNotification('❌ Video gönderilemedi', 'error');
       rethrow;
     }
+  }
+
+  Future<void> _waitForServerResponse() async {
+    final completer = Completer<void>();
+    StreamSubscription<String>? responseSubscription;
+
+    Timer? timeoutTimer = Timer(Duration(seconds: 10), () {
+      print('⏳ Sunucu yanıtı timeout (normal olabilir)');
+      responseSubscription?.cancel();
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+
+    responseSubscription = _incomingDataController.stream.listen((message) {
+      try {
+        Map<String, dynamic> response = jsonDecode(message);
+        if (response.containsKey('path')) {
+          receivedVideoPath = response['path'];
+          print('✅ Video yolu alındı: $receivedVideoPath');
+        }
+      } catch (e) {
+        print('⚠️ Yanıt parse hatası: $e');
+      }
+
+      timeoutTimer?.cancel();
+      responseSubscription?.cancel();
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+
+    await completer.future;
   }
 
   Future<void> photoSend({
@@ -809,9 +887,10 @@ class BluetoothService {
     try {
       print('Fotoğraf gönderiliyor: $imageName, yol: $imagePath');
       receivedVideoPath=imagePath;
-
+      _sendNotification('✅ Fotoğraf hazırlandı: $imageName', 'success');
     } catch (e) {
       print('Fotoğraf gönderme hatası: $e');
+      _sendNotification('❌ Fotoğraf gönderilemedi', 'error');
       rethrow;
     }
   }
@@ -820,6 +899,9 @@ class BluetoothService {
     required String meeting_title,
     required String start_hour,
     required String end_hour,
+    required String path,
+    required bool is_active,
+    required bool button_status,
   }) async {
     try {
       Map<String, dynamic> data = {
@@ -827,17 +909,17 @@ class BluetoothService {
         "meeting_title": meeting_title,
         "start_hour": start_hour,
         "end_hour": end_hour,
-        "path": receivedVideoPath ?? "",
-        "is_active": false,
-        "button_status": false
+        "path": path,
+        "is_active": is_active,
+        "button_status": button_status
       };
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
       print("Bilgi başarıyla eklendi");
-
-      receivedVideoPath = null;
+      _sendNotification('✅ Bilgi başarıyla eklendi', 'success');
     } catch (e) {
       print("Bilgi ekleme hatası: $e");
+      _sendNotification('❌ Bilgi eklenemedi', 'error');
       rethrow;
     }
   }
@@ -849,9 +931,9 @@ class BluetoothService {
       };
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
-
     }
     catch (e) {
+      _sendNotification('❌ Veri alınamadı', 'error');
       rethrow;
     }
   }
@@ -869,9 +951,11 @@ class BluetoothService {
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
       print("Parlaklık başarıyla eklendi");
+      _sendNotification('✅ Parlaklık ayarlandı', 'success');
     }
     catch (e) {
       print("Parlaklık ekleme hatası: $e");
+      _sendNotification('❌ Parlaklık ayarlanamadı', 'error');
       rethrow;
     }
   }
@@ -887,25 +971,14 @@ class BluetoothService {
 
       await sendDataToDevice(connectedDeviceMacAddress!, data);
       print("Volume başarıyla eklendi");
+      _sendNotification('✅ Ses seviyesi ayarlandı', 'success');
 
     } catch (e) {
       print("Volume ekleme hatası: $e");
+      _sendNotification('❌ Ses seviyesi ayarlanamadı', 'error');
       rethrow;
     }
   }
-
-  /*Future<void> veri() async {
-    try {
-      Map<String, dynamic> data = {
-        "type": "full_data",
-      };
-
-      await sendDataToDevice(connectedDeviceMacAddress!, data);
-
-    } catch (e) {
-      rethrow;
-    }
-  }*/
 
   void dispose() {
     _continuousScanTimer?.cancel();
@@ -918,9 +991,13 @@ class BluetoothService {
     _devicesController.close();
     _scanResultsController.close();
     _incomingDataController.close();
+    _notificationController.close(); // ✅ YENİ EKLEME
   }
 }
 
+// ============================================
+// Örnek Widget - Bildirimleri Dinleme
+// ============================================
 class BluetoothConnectionPage extends StatefulWidget {
   @override
   _BluetoothConnectionPageState createState() => _BluetoothConnectionPageState();
@@ -932,11 +1009,66 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
   bool _isScanning = false;
   bool _isConnecting = false;
 
+  // ✅ Bildirim subscription'ı
+  StreamSubscription<Map<String, dynamic>>? _notificationSubscription;
+
   @override
   void initState() {
     super.initState();
     _bluetoothService.initializeBluetooth();
     _setupListeners();
+
+    // ✅ Bildirimleri dinle
+    _notificationSubscription = _bluetoothService.notificationStream.listen((notification) {
+      if (!mounted) return;
+
+      String message = notification['message'];
+      String type = notification['type'];
+
+      // Snackbar göster
+      Color backgroundColor;
+      IconData icon;
+
+      switch (type) {
+        case 'success':
+          backgroundColor = Colors.green;
+          icon = Icons.check_circle;
+          break;
+        case 'error':
+          backgroundColor = Colors.red;
+          icon = Icons.error;
+          break;
+        case 'warning':
+          backgroundColor = Colors.orange;
+          icon = Icons.warning;
+          break;
+        default:
+          backgroundColor = Colors.blue;
+          icon = Icons.info;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(icon, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: backgroundColor,
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    });
   }
 
   void _setupListeners() {
@@ -1175,10 +1307,8 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
         await _bluetoothService.connectToDevice(device);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Hata: ${e.toString()}'),
-        backgroundColor: Colors.red,
-      ));
+      // Hata bildirimi BluetoothService tarafından otomatik gönderiliyor
+      print('Bağlantı hatası: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -1239,6 +1369,8 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
 
   @override
   void dispose() {
+    // ✅ Bildirim subscription'ını temizle
+    _notificationSubscription?.cancel();
     super.dispose();
   }
 }

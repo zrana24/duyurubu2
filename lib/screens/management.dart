@@ -57,6 +57,22 @@ class TimeTextInputFormatter extends TextInputFormatter {
   }
 }
 
+class VideoUploadData {
+  String videoPath;
+  String videoName;
+  String? title;
+  String? startTime;
+  String? endTime;
+
+  VideoUploadData({
+    required this.videoPath,
+    required this.videoName,
+    this.title,
+    this.startTime,
+    this.endTime,
+  });
+}
+
 class Management extends StatefulWidget {
   const Management({Key? key}) : super(key: key);
 
@@ -173,7 +189,8 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     String name = '';
     String time = '';
     bool isLoading = false;
-    bool toggleValue = true;
+    bool toggleValue = false;
+    bool buttonStatus = false;
 
     final timeController = TextEditingController(text: '');
 
@@ -221,7 +238,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           ),
                           SizedBox(height: 20),
 
-                          // 🔥 YENİ SAAT FORMATLI TEXTFIELD
                           TextField(
                             enabled: !isLoading,
                             controller: timeController,
@@ -258,6 +274,42 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                                   child: AnimatedAlign(
                                     duration: Duration(milliseconds: 200),
                                     alignment: toggleValue ? Alignment.centerRight : Alignment.centerLeft,
+                                    child: Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Aktif Buton', style: TextStyle(fontSize: 16)),
+                              GestureDetector(
+                                onTap: () {
+                                  setDialogState(() {
+                                    buttonStatus = !buttonStatus;
+                                  });
+                                },
+                                child: Container(
+                                  width: 50,
+                                  height: 26,
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: buttonStatus ? const Color(0xFF196E64) : Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: AnimatedAlign(
+                                    duration: Duration(milliseconds: 200),
+                                    alignment: buttonStatus ? Alignment.centerRight : Alignment.centerLeft,
                                     child: Container(
                                       width: 20,
                                       height: 20,
@@ -315,7 +367,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                               name: name,
                               title: department,
                               togle: toggleValue,
-                              isActive: false,
+                              isActive: buttonStatus,
                               time: time,
                             );
 
@@ -596,6 +648,7 @@ class _ContentManagementState extends State<ContentManagement> {
       'type': 'photo',
       'file': null,
       'isEditing': false,
+      'videoPath': null, // Video path'i saklamak için
     }
   ];
   final ImagePicker _picker = ImagePicker();
@@ -610,7 +663,8 @@ class _ContentManagementState extends State<ContentManagement> {
         'type': 'photo',
         'file': null,
         'isEditing': true,
-        'isNew': true, // Yeni eklenen içerik işaretlendi
+        'isNew': true,
+        'videoPath': null,
       });
     });
   }
@@ -635,28 +689,8 @@ class _ContentManagementState extends State<ContentManagement> {
                     setState(() {
                       _contents[index]['file'] = File(image.path);
                       _contents[index]['type'] = 'photo';
+                      _contents[index]['videoPath'] = image.path;
                     });
-
-                    try {
-                      await _bluetoothService.photoSend(
-                        imagePath: image.path,
-                        imageName: image.name,
-                      );
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Fotoğraf başarıyla gönderildi'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Fotoğraf gönderilemedi: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
                   }
                 },
               ),
@@ -676,43 +710,16 @@ class _ContentManagementState extends State<ContentManagement> {
                       print("Video: ${video.name}");
                       print("Boyut: $videoSize bytes ($videoSizeMB MB)");
 
-                      try {
-                        await _bluetoothService.videosend(
-                          size: videoSizeMB,
-                          name: video.name,
-                          videoPath: video.path,
-                        );
-
-                        setState(() {
-                          _contents[index]['file'] = videoFile;
-                          _contents[index]['type'] = 'video';
-                        });
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Video başarıyla gönderildi'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                      catch (e, stackTrace) {
-                        print("Video gönderme hatası: $e");
-                        print("StackTrace:\n$stackTrace");
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Video gönderilemedi: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                    catch (e) {
+                      _showVideoUploadProgress(
+                        videoName: video.name,
+                        videoPath: video.path,
+                        videoSizeMB: videoSizeMB,
+                        index: index,
+                        videoFile: videoFile,
+                      );
+                    } catch (e) {
                       print("Video boyut hatası: $e");
                     }
-                  }
-                  else {
-                    print("Video seçilmedi");
                   }
                 },
               ),
@@ -723,7 +730,229 @@ class _ContentManagementState extends State<ContentManagement> {
     );
   }
 
-  Future<void> _saveContent(int index, String title, String startTime, String endTime) async {
+  void _showVideoUploadProgress({
+    required String videoName,
+    required String videoPath,
+    required String videoSizeMB,
+    required int index,
+    required File videoFile,
+  }) {
+    double uploadProgress = 0.0;
+    bool isUploading = true;
+    bool isCancelled = false;
+
+    late StateSetter dialogSetState;
+    late BuildContext dialogContext;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext ctx) {
+        dialogContext = ctx;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            dialogSetState = setState;
+
+            return WillPopScope(
+              onWillPop: () async => false,
+              child: AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(Icons.videocam, color: Color(0xFF196E64)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Video Gönderiliyor',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      videoName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Boyut: $videoSizeMB MB',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    SizedBox(height: 24),
+
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: uploadProgress / 100,
+                        minHeight: 12,
+                        backgroundColor: Colors.grey[300],
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF196E64),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+
+                    Text(
+                      '${uploadProgress.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF196E64),
+                      ),
+                    ),
+
+                    if (!isUploading && !isCancelled)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Video Gönderildi!\nŞimdi bilgileri girin.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    if (isCancelled)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cancel, color: Colors.red, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Gönderim İptal Edildi',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                actions: [
+                  if (isUploading)
+                    TextButton(
+                      onPressed: () {
+                        dialogSetState(() {
+                          isCancelled = true;
+                          isUploading = false;
+                        });
+
+                        Navigator.of(dialogContext).pop();
+
+                        if (mounted) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(
+                              content: Text('Video gönderimi iptal edildi'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      },
+                      child: Text(
+                        'İptal',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+
+                  if (!isUploading)
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF196E64),
+                      ),
+                      child: Text(
+                        'Tamam',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    _bluetoothService.videosend(
+      size: videoSizeMB,
+      name: videoName,
+      videoPath: videoPath,
+      onProgress: (progress) {
+        if (!isCancelled && mounted) {
+          try {
+            dialogSetState(() {
+              uploadProgress = progress;
+            });
+          }
+          catch (e) {
+            print('güncelleme hatası: $e');
+          }
+        }
+      },
+    ).then((_) {
+      if (!isCancelled && mounted) {
+        dialogSetState(() {
+          isUploading = false;
+          uploadProgress = 100.0;
+        });
+
+        // Video başarıyla gönderildi, bilgileri kartda sakla
+        setState(() {
+          _contents[index]['file'] = videoFile;
+          _contents[index]['type'] = 'video';
+          _contents[index]['videoPath'] = _bluetoothService.receivedVideoPath ?? videoPath;
+        });
+
+        print('✅ Video path kaydedildi: ${_contents[index]['videoPath']}');
+      }
+    }).catchError((e) {
+      if (!isCancelled && mounted) {
+        dialogSetState(() {
+          isUploading = false;
+        });
+
+        Navigator.of(dialogContext).pop();
+
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          SnackBar(
+            content: Text('Video gönderilemedi: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> _saveContent(int index, String title, String startTime, String endTime, bool isActive) async {
     if (title.trim().isEmpty || startTime.trim().isEmpty || endTime.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: const Text('Lütfen tüm alanları doldurun'),
@@ -745,10 +974,15 @@ class _ContentManagementState extends State<ContentManagement> {
     }
 
     try {
+      String? videoPath = _contents[index]['videoPath'] as String?;
+
       await _bluetoothService.bilgiAdd(
         meeting_title: title.trim(),
         start_hour: startTime,
         end_hour: endTime,
+        path: videoPath ?? "",
+        is_active: isActive,
+        button_status: false,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -764,8 +998,10 @@ class _ContentManagementState extends State<ContentManagement> {
           'endTime': endTime,
           'type': _contents[index]['type'],
           'file': _contents[index]['file'],
+          'videoPath': videoPath,
           'isEditing': false,
-          'isNew': false, // Artık yeni değil
+          'isNew': false,
+          'isActive': isActive,
           'borderColor': _contents[index]['borderColor'] ?? const Color(0xFF5E6676),
         };
       });
@@ -780,11 +1016,9 @@ class _ContentManagementState extends State<ContentManagement> {
 
   void _cancelEdit(int index) {
     setState(() {
-      // Eğer yeni eklenen bir içerikse ve iptal ediliyorsa, sil
       if (_contents[index]['isNew'] == true) {
         _contents.removeAt(index);
       } else {
-        // Mevcut içerikse sadece edit modundan çık
         _contents[index]['isEditing'] = false;
       }
     });
@@ -1006,10 +1240,16 @@ class _ContentManagementState extends State<ContentManagement> {
                       content: _contents[index],
                       index: index,
                       isTablet: isTablet,
-                      onSave: (title, startTime, endTime) => _saveContent(index, title, startTime, endTime),
+                      onSave: (title, startTime, endTime, isActive) =>
+                          _saveContent(index, title, startTime, endTime, isActive),
                       onCancel: () => _cancelEdit(index),
                       onDelete: () => _deleteContent(index),
                       onFilePick: () => _pickFile(index),
+                      onToggleChange: (value) {
+                        setState(() {
+                          _contents[index]['isActive'] = value;
+                        });
+                      },
                     ),
                     if (index < _contents.length - 1)
                       Transform.translate(
@@ -1519,10 +1759,11 @@ class EditableContentCard extends StatefulWidget {
   final Map<String, dynamic> content;
   final int index;
   final bool isTablet;
-  final Function(String, String, String) onSave;
+  final Function(String, String, String, bool) onSave; // isActive parametresi eklendi
   final VoidCallback onCancel;
   final VoidCallback onFilePick;
   final VoidCallback onDelete;
+  final Function(bool) onToggleChange; // Yeni callback
 
   const EditableContentCard({
     Key? key,
@@ -1533,6 +1774,7 @@ class EditableContentCard extends StatefulWidget {
     required this.onCancel,
     required this.onFilePick,
     required this.onDelete,
+    required this.onToggleChange,
   }) : super(key: key);
 
   @override
@@ -1544,7 +1786,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
   bool _isPlaying = false;
-  bool _isSwitchActive = false;
+  late bool _isSwitchActive;
 
   @override
   void initState() {
@@ -1570,7 +1812,12 @@ class _EditableContentCardState extends State<EditableContentCard> {
   }
 
   void _saveContent() {
-    widget.onSave(_titleController.text, _startTimeController.text, _endTimeController.text);
+    widget.onSave(
+      _titleController.text,
+      _startTimeController.text,
+      _endTimeController.text,
+      _isSwitchActive,
+    );
   }
 
   void _togglePlay() {
@@ -1579,12 +1826,11 @@ class _EditableContentCardState extends State<EditableContentCard> {
     });
   }
 
-  void _increaseTime() {
-    print('Zaman artırıldı');
-  }
-
-  void _decreaseTime() {
-    print('Zaman azaltıldı');
+  void _toggleSwitch() {
+    setState(() {
+      _isSwitchActive = !_isSwitchActive;
+    });
+    widget.onToggleChange(_isSwitchActive);
   }
 
   Widget _buildFilePreview() {
@@ -1801,8 +2047,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                     children: [
                       Row(
                         children: [
-                          _buildImageIcon('assets/images/saat.png', widget
-                              .isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
+                          _buildImageIcon('assets/images/saat.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
                           SizedBox(width: widget.isTablet ? 8.0 : 6.0),
                           _buildDigitalTime(
                             widget.content['startTime'] as String,
@@ -1828,10 +2073,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
                             _isEditing,
                             _isEditing ? _endTimeController : null,
                           ),
-                          if (!_isEditing) ...[
-                            const Spacer(),
-                            _buildToggleSwitch(),
-                          ],
+                          const Spacer(),
+                          _buildToggleSwitch(),
                         ],
                       ),
                     ],
@@ -1918,11 +2161,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
 
   Widget _buildToggleSwitch() {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isSwitchActive = !_isSwitchActive;
-        });
-      },
+      onTap: _toggleSwitch,
       child: Container(
         width: widget.isTablet ? 30 : 26,
         height: widget.isTablet ? 14 : 12,
@@ -1931,7 +2170,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
           color: _isSwitchActive ? const Color(0xFF196E64) : Colors.grey[300],
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Align(
+        child: AnimatedAlign(
+          duration: Duration(milliseconds: 200),
           alignment: _isSwitchActive ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             width: widget.isTablet ? 10 : 8,
