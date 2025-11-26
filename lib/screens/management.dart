@@ -118,6 +118,7 @@ class _ManagementState extends State<Management> {
     });
 
     try {
+
       Map<String, dynamic> freshData = await _bluetoothService.veriWithImages();
 
       setState(() {

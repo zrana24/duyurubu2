@@ -1065,6 +1065,13 @@ class BluetoothService {
           }
         } catch (e) {
           print('❌ Base64 decode başarısız: $e');
+          await Future.delayed(Duration(seconds: 4)); // 🔥 2 saniye bekleme
+
+          return await veriWithImages();
+
+
+
+
           // Son çare: string'i direkt JSON olarak parse etmeyi dene
           try {
             parsedData = jsonDecode(jsonStr);
