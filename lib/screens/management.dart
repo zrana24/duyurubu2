@@ -1077,11 +1077,12 @@ class _ContentManagementState extends State<ContentManagement> {
 
         // ✅ Video yolu BluetoothService'den al
         String? serverVideoPath = _bluetoothService.receivedVideoPath;
-
+        print(serverVideoPath);
         setState(() {
           _contents[index]['file'] = videoFile;
           _contents[index]['type'] = 'video';
-          _contents[index]['videoPath'] = serverVideoPath ?? videoPath; // Server'dan gelen path
+          _contents[index]['videoPath'] = serverVideoPath;// Server'dan gelen
+          // path
         });
 
         print('✅ Video path kaydedildi: ${_contents[index]['videoPath']}');

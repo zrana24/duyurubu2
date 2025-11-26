@@ -628,7 +628,7 @@ class BluetoothService {
     _connectionStateController.add(state);
   }
 
-  void _handleIncomingData(String message) {
+  /*void _handleIncomingData(String message) {
     try {
       Map<String, dynamic> jsonData = jsonDecode(message);
       print('📊 JSON verisi alındı: $jsonData');
@@ -655,7 +655,7 @@ class BluetoothService {
         print('❌ Regex hatası: $regexError');
       }
     }
-  }
+  }*/
 
   Future<void> sendDataToDevice(String macAddress, Map<String, dynamic> data) async {
     try {
@@ -806,7 +806,6 @@ class BluetoothService {
             _sendNotification('❌ Video gönderimi iptal edildi', 'error');
             throw Exception("❌ ${maxConsecutiveErrors} ardışık hata, aktarım iptal edildi");
           }
-
           try {
             print("🔄 Bağlantı yeniden kuruluyor (deneme ${consecutiveErrors})...");
             await connectToCsServer(connectedDeviceMacAddress!);
@@ -850,11 +849,66 @@ class BluetoothService {
           : 0;
 
       print("\n✅ Video tamamen gönderildi: $name");
+
+
+
+
+      final completer = Completer<void>();
+
+      _dataSubscription = _connectionInputStream!.listen(
+            (Uint8List packet) {
+          String msg = String.fromCharCodes(packet).trim();
+          print("📥 Gelen mesaj: $msg");
+
+          try {
+            Map<String, dynamic> response = jsonDecode(msg);
+
+            if (response.containsKey('path')) {
+              receivedVideoPath = response['path'];
+              print('🎉 PATH ALINDI: $receivedVideoPath');
+
+              _dataSubscription?.cancel();
+              _dataSubscription = null;
+
+              if (!completer.isCompleted) {
+                completer.complete();
+              }
+            }
+          } catch (_) {}
+        },
+        onDone: () {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+        onError: (_) {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+        cancelOnError: true,
+      );
+
+      // 🔥 Path gelene kadar bekle
+      await completer.future;
+
+      /// -----------------------------------------------------
+
+      print("✔✔✔ SON PATH: $receivedVideoPath");
+
+
+
+
+
+
+
+
       print("📊 ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB - Süre: ${totalTime.inSeconds}s - Ort. Hız: ${avgSpeed.toStringAsFixed(2)} MB/s");
 
       _sendNotification('✅ Video başarıyla gönderildi: $name', 'success');
 
-      await _waitForServerResponse();
+       //_waitForServerResponse();
+       print("çalıştım knk $receivedVideoPath");
 
     } catch (e, stackTrace) {
       print("❌ Video gönderme hatası: $e");
@@ -874,26 +928,16 @@ class BluetoothService {
     final completer = Completer<void>();
     StreamSubscription<String>? responseSubscription;
 
-    Timer? timeoutTimer = Timer(Duration(seconds: 10), () {
-      print('⏳ Sunucu yanıtı timeout (normal olabilir)');
-      responseSubscription?.cancel();
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    });
+
 
     responseSubscription = _incomingDataController.stream.listen((message) {
       try {
-        Map<String, dynamic> response = jsonDecode(message);
-        if (response.containsKey('path')) {
-          receivedVideoPath = response['path'];
-          print('✅ Video yolu alındı: $receivedVideoPath');
-        }
+
       } catch (e) {
         print('⚠️ Yanıt parse hatası: $e');
       }
 
-      timeoutTimer?.cancel();
+
       responseSubscription?.cancel();
       if (!completer.isCompleted) {
         completer.complete();
@@ -903,7 +947,7 @@ class BluetoothService {
     await completer.future;
   }
 
-  Future<void> photoSend({
+  /*Future<void> photoSend({
     required String imagePath,
     required String imageName,
   }) async {
@@ -916,7 +960,7 @@ class BluetoothService {
       _sendNotification('❌ Fotoğraf gönderilemedi', 'error');
       rethrow;
     }
-  }
+  }*/
 
   Future<void> bilgiAdd({
     required String meeting_title,
