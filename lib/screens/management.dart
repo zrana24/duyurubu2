@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'connected.dart';
+import 'dart:convert';
 
 class TimeTextInputFormatter extends TextInputFormatter {
   @override
@@ -82,6 +83,101 @@ class Management extends StatefulWidget {
 
 class _ManagementState extends State<Management> {
   int _currentIndex = 0;
+  final BluetoothService _bluetoothService = BluetoothService();
+  Map<String, dynamic>? _cachedData;
+  bool _isLoadingData = false;
+  bool _hasError = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSharedData();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_cachedData == null && !_isLoadingData && !_hasError) {
+      _loadSharedData();
+    }
+  }
+
+  Future<void> _loadSharedData() async {
+    if (_isLoadingData) return;
+
+    setState(() {
+      _isLoadingData = true;
+      _hasError = false;
+      _errorMessage = '';
+    });
+
+    try {
+      Map<String, dynamic> freshData = await _bluetoothService.veriWithImages();
+
+      setState(() {
+        _cachedData = freshData;
+        _hasError = false;
+      });
+
+      print('✅ Veri başarıyla yüklendi');
+    }
+    catch (e, stackTrace) {
+      print('❌ Veri yükleme hatası: $e');
+      print(stackTrace);
+
+      setState(() {
+        _hasError = true;
+        _errorMessage = e.toString();
+        _cachedData = null;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Veri yüklenemedi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+    finally {
+      setState(() => _isLoadingData = false);
+    }
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red),
+          SizedBox(height: 16),
+          Text(
+            'Veri Yüklenemedi',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text(
+            _errorMessage,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadSharedData,
+            child: Text('Tekrar Dene'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +197,9 @@ class _ManagementState extends State<Management> {
             Expanded(
               child: Padding(
                 padding: EdgeInsets.all(isTablet ? 16.0 : 12.0),
-                child: isTablet ? _buildTabletLayout() : _buildMobileLayout(),
+                child: _isLoadingData
+                    ? Center(child: CircularProgressIndicator())
+                    : (isTablet ? _buildTabletLayout() : _buildMobileLayout()),
               ),
             ),
           ],
@@ -115,11 +213,11 @@ class _ManagementState extends State<Management> {
       children: [
         Expanded(
           flex: 1,
-          child: const SpeakerManagement(),
+          child: SpeakerManagement(cachedData: _cachedData),
         ),
         Expanded(
           flex: 1,
-          child: const ContentManagement(),
+          child: ContentManagement(cachedData: _cachedData),
         ),
       ],
     );
@@ -138,7 +236,7 @@ class _ManagementState extends State<Management> {
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const SpeakerManagement(),
+            child: SpeakerManagement(cachedData: _cachedData),
           ),
         ),
         SizedBox(width: 16),
@@ -152,7 +250,7 @@ class _ManagementState extends State<Management> {
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const ContentManagement(),
+            child: ContentManagement(cachedData: _cachedData),
           ),
         ),
       ],
@@ -161,7 +259,9 @@ class _ManagementState extends State<Management> {
 }
 
 class SpeakerManagement extends StatefulWidget {
-  const SpeakerManagement({Key? key}) : super(key: key);
+  final Map<String, dynamic>? cachedData;
+
+  const SpeakerManagement({Key? key, this.cachedData}) : super(key: key);
 
   @override
   State<SpeakerManagement> createState() => _SpeakerManagementState();
@@ -169,16 +269,35 @@ class SpeakerManagement extends StatefulWidget {
 
 class _SpeakerManagementState extends State<SpeakerManagement> {
   final BluetoothService _bluetoothService = BluetoothService();
+  List<Map<String, dynamic>> _speakers = [];
+  bool _isLoading = true;
 
-  List<Map<String, dynamic>> _speakers = [
-    {
-      'department': 'Satış ve Pazarlama Müdürü',
-      'name': 'Macit AHISKALI',
-      'time': '00:30:00',
-      'isEditing': false,
-      'isActive': false,
+  @override
+  void initState() {
+    super.initState();
+    _loadDataFromCache();
+  }
+
+  void _loadDataFromCache() {
+    if (widget.cachedData != null &&
+        widget.cachedData!.containsKey('isimlik') &&
+        widget.cachedData!['isimlik'] is List) {
+      List<dynamic> isimlikList = widget.cachedData!['isimlik'];
+      setState(() {
+        _speakers = isimlikList.map((item) => {
+          'department': item['title'] ?? '',
+          'name': item['name'] ?? '',
+          'time': item['duration'] ?? '00:00:00',
+          'isEditing': false,
+          'isActive': item['is_active'] ?? false,
+          'toggle': item['toggle'] ?? false,
+        }).toList();
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
     }
-  ];
+  }
 
   void _addNewSpeaker() {
     _showAddSpeakerDialog();
@@ -632,7 +751,9 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
 }
 
 class ContentManagement extends StatefulWidget {
-  const ContentManagement({Key? key}) : super(key: key);
+  final Map<String, dynamic>? cachedData;
+
+  const ContentManagement({Key? key, this.cachedData}) : super(key: key);
 
   @override
   State<ContentManagement> createState() => _ContentManagementState();
@@ -640,19 +761,48 @@ class ContentManagement extends StatefulWidget {
 
 class _ContentManagementState extends State<ContentManagement> {
   final BluetoothService _bluetoothService = BluetoothService();
-  List<Map<String, dynamic>> _contents = [
-    {
-      'title': 'Küresel Isınma Toplantısına Hoş Geldiniz',
-      'startTime': '00:30:00',
-      'endTime': '00:30:00',
-      'type': 'photo',
-      'file': null,
-      'isEditing': false,
-      'videoPath': null, // Video path'i saklamak için
-    }
-  ];
+  List<Map<String, dynamic>> _contents = [];
   final ImagePicker _picker = ImagePicker();
   bool _showExportSuccess = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDataFromCache();
+  }
+
+  void _loadDataFromCache() {
+    if (widget.cachedData != null &&
+        widget.cachedData!.containsKey('bilgi') &&
+        widget.cachedData!['bilgi'] is List) {
+      List<dynamic> bilgiList = widget.cachedData!['bilgi'];
+
+      setState(() {
+        _contents = bilgiList.map((item) {
+          // ✅ Artık thumbnailImage key'ini kullan
+          Image? thumbnail = item['thumbnailImage'];
+
+          return {
+            'title': item['meeting_title'] ?? '',
+            'startTime': item['start_hour'] ?? '00:00:00',
+            'endTime': item['end_hour'] ?? '00:00:00',
+            'type': (item['path'] ?? '').toString().toLowerCase().endsWith('.mp4') ? 'video' : 'photo',
+            'file': null,
+            'isEditing': false,
+            'videoPath': item['path'] ?? '',
+            'isActive': item['is_active'] ?? false,
+            'buttonStatus': item['button_status'] ?? false,
+            'thumbnailBase64': item['thumbnailBase64'] ?? '',
+            'thumbnail': thumbnail, // ✅ Hazır Image widget
+          };
+        }).toList();
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
 
   void _addNewContent() {
     setState(() {
@@ -924,14 +1074,27 @@ class _ContentManagementState extends State<ContentManagement> {
           uploadProgress = 100.0;
         });
 
-        // Video başarıyla gönderildi, bilgileri kartda sakla
+        // ✅ Video yolu BluetoothService'den al
+        String? serverVideoPath = _bluetoothService.receivedVideoPath;
+
         setState(() {
           _contents[index]['file'] = videoFile;
           _contents[index]['type'] = 'video';
-          _contents[index]['videoPath'] = _bluetoothService.receivedVideoPath ?? videoPath;
+          _contents[index]['videoPath'] = serverVideoPath ?? videoPath; // Server'dan gelen path
         });
 
         print('✅ Video path kaydedildi: ${_contents[index]['videoPath']}');
+
+        // ✅ Path başarıyla alındığında kullanıcıya bildir
+        if (serverVideoPath != null && serverVideoPath.isNotEmpty) {
+          ScaffoldMessenger.of(this.context).showSnackBar(
+            SnackBar(
+              content: Text('Video yolu alındı: $serverVideoPath'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
     }).catchError((e) {
       if (!isCancelled && mounted) {
@@ -974,13 +1137,27 @@ class _ContentManagementState extends State<ContentManagement> {
     }
 
     try {
+      // ✅ Video yolunu içerikten al
       String? videoPath = _contents[index]['videoPath'] as String?;
 
+      // ✅ Eğer video yolu boşsa veya nullsa uyar
+      if (videoPath == null || videoPath.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Video yolu bulunamadı. Lütfen önce video yükleyin.'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 3),
+        ));
+        return;
+      }
+
+      print('📤 bilgiAdd çağrılıyor - path: $videoPath');
+
+      // ✅ bilgiAdd fonksiyonuna gönder
       await _bluetoothService.bilgiAdd(
         meeting_title: title.trim(),
         start_hour: startTime,
         end_hour: endTime,
-        path: videoPath ?? "",
+        path: videoPath,
         is_active: isActive,
         button_status: false,
       );
@@ -1463,9 +1640,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
             ),
             Row(
               children: [
-                _buildImageIcon('assets/images/konusmaci.png', widget
-                    .isTablet ?
-                18 : 16, widget.isTablet ? 20 : 18),
+                _buildImageIcon('assets/images/konusmaci.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
                 SizedBox(width: widget.isTablet ? 8.0 : 6.0),
                 Expanded(
                   child: _isEditing
@@ -1759,11 +1934,11 @@ class EditableContentCard extends StatefulWidget {
   final Map<String, dynamic> content;
   final int index;
   final bool isTablet;
-  final Function(String, String, String, bool) onSave; // isActive parametresi eklendi
+  final Function(String, String, String, bool) onSave;
   final VoidCallback onCancel;
   final VoidCallback onFilePick;
   final VoidCallback onDelete;
-  final Function(bool) onToggleChange; // Yeni callback
+  final Function(bool) onToggleChange;
 
   const EditableContentCard({
     Key? key,
@@ -1834,89 +2009,68 @@ class _EditableContentCardState extends State<EditableContentCard> {
   }
 
   Widget _buildFilePreview() {
-    if (widget.content['file'] == null) {
-      return Icon(
-        Icons.image_outlined,
-        size: widget.isTablet ? 28 : 26,
-        color: Colors.grey[400],
-      );
-    }
-
-    final file = widget.content['file'] as File;
-    final fileType = widget.content['type'] as String;
-
-    if (fileType == 'photo') {
+    if (widget.content['thumbnail'] != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(7),
-        child: Image.file(
-          file,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(
-              Icons.broken_image,
-              size: widget.isTablet ? 28 : 26,
-              color: Colors.grey[400],
-            );
-          },
-        ),
-      );
-    } else if (fileType == 'video') {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.videocam,
-                size: widget.isTablet ? 24 : 22,
-                color: Colors.red,
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Video',
-                style: TextStyle(
-                  fontSize: widget.isTablet ? 10 : 8,
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.description,
-                size: widget.isTablet ? 24 : 22,
-                color: Colors.blue,
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Doküman',
-                style: TextStyle(
-                  fontSize: widget.isTablet ? 10 : 8,
-                  color: Colors.blue,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: widget.content['thumbnail'] as Image,
       );
     }
+
+    if (widget.content['file'] != null) {
+      final file = widget.content['file'] as File;
+      final fileType = widget.content['type'] as String;
+
+      if (fileType == 'photo') {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(7),
+          child: Image.file(
+            file,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.broken_image,
+                size: widget.isTablet ? 28 : 26,
+                color: Colors.grey[400],
+              );
+            },
+          ),
+        );
+      } else if (fileType == 'video') {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.videocam,
+                  size: widget.isTablet ? 24 : 22,
+                  color: Colors.red,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Video',
+                  style: TextStyle(
+                    fontSize: widget.isTablet ? 10 : 8,
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    return Icon(
+      Icons.image_outlined,
+      size: widget.isTablet ? 28 : 26,
+      color: Colors.grey[400],
+    );
   }
 
   @override

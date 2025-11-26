@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'image.dart';
+import 'screens/connected.dart';
+import 'bluetooth_provider.dart';
+
 
 class LanguageProvider extends ChangeNotifier {
   Locale _locale = const Locale('tr', 'TR');
