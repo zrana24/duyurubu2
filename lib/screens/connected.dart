@@ -680,6 +680,54 @@ class BluetoothService {
     }
   }
 
+  Future<void> status({
+    required int id,
+    required bool status,
+  })async{
+    Map<String, dynamic> data = {
+      "type": "status",
+      "id": id,
+      "status": status,
+    };
+
+    await sendDataToDevice(connectedDeviceMacAddress!, data);
+  }
+
+  Future<void> delete({
+    required int id,
+    required String tip,
+  })async{
+    Map<String, dynamic> data = {
+      "type": "delete",
+      "id": id,
+      "tip": tip.trim(),
+    };
+
+    await sendDataToDevice(connectedDeviceMacAddress!, data);
+  }
+
+  Future<void> arti({
+    required int id,
+  })async{
+    Map<String, dynamic> data = {
+      "type": "arti",
+      "id": id,
+    };
+
+    await sendDataToDevice(connectedDeviceMacAddress!, data);
+  }
+
+  Future<void> eksi({
+    required int id,
+  })async{
+    Map<String, dynamic> data = {
+      "type": "eksi",
+      "id": id,
+    };
+
+    await sendDataToDevice(connectedDeviceMacAddress!, data);
+  }
+
   Future<void> isimlikAdd({
     required String name,
     required String title,
