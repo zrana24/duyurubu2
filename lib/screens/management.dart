@@ -1483,11 +1483,13 @@ class EditableSpeakerCard extends StatefulWidget {
 }
 
 class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
+  final BluetoothService _bluetooth = BluetoothService();
   late TextEditingController _departmentController;
   late TextEditingController _nameController;
   late TextEditingController _timeController;
   bool _isPlaying = false;
   late bool _isSwitchActive;
+  String tip="isimlik";
 
   @override
   void initState() {
@@ -1506,21 +1508,11 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     super.dispose();
   }
 
-  void _saveSpeaker() {
-    widget.onSave(_departmentController.text, _nameController.text, _timeController.text);
-  }
-
   Color _getBorderColor() {
     return widget.speaker['borderColor'] as Color? ?? const Color(0xFF5E6676);
   }
 
   bool get _isEditing => widget.speaker['isEditing'] as bool? ?? false;
-
-  void _togglePlay() {
-    setState(() {
-      _isPlaying = !_isPlaying;
-    });
-  }
 
   void _toggleSwitch() {
     setState(() {
@@ -1529,12 +1521,10 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     widget.onToggleChange(_isSwitchActive);
   }
 
-  void _increaseTime() {
-    print('Zaman artırıldı');
-  }
-
-  void _decreaseTime() {
-    print('Zaman azaltıldı');
+  void _togglePlay() {
+    setState(() {
+      _isPlaying = !_isPlaying;
+    });
   }
 
   @override
@@ -1768,7 +1758,17 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
 
   Widget _buildToggleSwitch() {
     return GestureDetector(
-      onTap: _toggleSwitch,
+      key: ValueKey(widget.index),
+      onTap: () async {
+        int id = widget.index;
+        String tip = this.tip;
+        bool isSwitchActive = this._isSwitchActive;
+
+        print("toogle tıklandı $id $tip");
+
+        await _bluetooth.toogle(id: id, tip: tip ,status:isSwitchActive);
+        _toggleSwitch();
+      },
       child: Container(
         width: widget.isTablet ? 30 : 26,
         height: widget.isTablet ? 14 : 12,
@@ -1829,47 +1829,67 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: widget.isTablet ? 48 : 0,
-                height: widget.isTablet ? 57 : 0,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFEFF9),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    topRight: Radius.circular(10),
+              GestureDetector(
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+
+                  print("artı tıklandı $tip ve $id");
+
+                  await _bluetooth.arti(id: id, tip: tip);
+                },
+                child: Container(
+                  width: widget.isTablet ? 48 : 0,
+                  height: widget.isTablet ? 57 : 0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFEFF9),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF52596C),
+                      width: 0.5,
+                    ),
                   ),
-                  border: Border.all(
-                    color: const Color(0xFF52596C),
-                    width: 0.5,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.add,
-                    size: widget.isTablet ? 18 : 16,
-                    color: const Color(0xFF1D1D1D),
+                  child: Center(
+                    child: Icon(
+                      Icons.add,
+                      size: widget.isTablet ? 18 : 16,
+                      color: const Color(0xFF1D1D1D),
+                    ),
                   ),
                 ),
               ),
-              Container(
-                width: widget.isTablet ? 48 : 0,
-                height: widget.isTablet ? 56 : 0,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFEFF9),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(10),
-                    bottomRight: Radius.circular(10),
+              GestureDetector(
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+
+                  print("eksi tıklandı $tip ve $id");
+
+                  await _bluetooth.eksi(id: id, tip: tip);
+                },
+                child: Container(
+                  width: widget.isTablet ? 48 : 0,
+                  height: widget.isTablet ? 57 : 0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFEFF9),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10),
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF52596C),
+                      width: 0.5,
+                    ),
                   ),
-                  border: Border.all(
-                    color: const Color(0xFF52596C),
-                    width: 0.5,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.remove,
-                    size: widget.isTablet ? 18 : 16,
-                    color: const Color(0xFF1D1D1D),
+                  child: Center(
+                    child: Icon(
+                      Icons.remove,
+                      size: widget.isTablet ? 18 : 16,
+                      color: const Color(0xFF1D1D1D),
+                    ),
                   ),
                 ),
               ),
@@ -1880,7 +1900,14 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onTap: widget.onDelete,
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+
+                  print("delete tıklandı $tip ve $id");
+
+                  await _bluetooth.delete(id: id, tip: tip);
+                },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
                   height: widget.isTablet ? 57 : 0,
@@ -1903,7 +1930,16 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
               ),
               SizedBox(height: widget.isTablet ? 2 : 0),
               GestureDetector(
-                onTap: _togglePlay,
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+                  bool _isPlaying = this._isPlaying;
+
+                  print("play tıklandı $tip ve $id");
+
+                  await _bluetooth.playStatus(id: id, tip: tip, isPlaying: _isPlaying);
+                  _togglePlay();
+                },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
                   height: widget.isTablet ? 56 : 0,
@@ -1959,18 +1995,23 @@ class EditableContentCard extends StatefulWidget {
 }
 
 class _EditableContentCardState extends State<EditableContentCard> {
+  final BluetoothService _bluetooth = BluetoothService();
   late TextEditingController _titleController;
   late TextEditingController _startTimeController;
   late TextEditingController _endTimeController;
   bool _isPlaying = false;
   late bool _isSwitchActive;
+  String tip= "bilgi";
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.content['title'] as String);
-    _startTimeController = TextEditingController(text: widget.content['startTime'] as String);
-    _endTimeController = TextEditingController(text: widget.content['endTime'] as String);
+    _titleController =
+        TextEditingController(text: widget.content['title'] as String);
+    _startTimeController =
+        TextEditingController(text: widget.content['startTime'] as String);
+    _endTimeController =
+        TextEditingController(text: widget.content['endTime'] as String);
     _isSwitchActive = widget.content['isActive'] as bool? ?? false;
   }
 
@@ -2084,7 +2125,9 @@ class _EditableContentCardState extends State<EditableContentCard> {
       margin: EdgeInsets.only(
         left: widget.isTablet ? 13 : 8,
         right: widget.isTablet ? 13 : 8,
-        top: widget.isTablet ? (widget.index == 0 ? 20 : 0) : (widget.index == 0 ? 15 : 0),
+        top: widget.isTablet ? (widget.index == 0 ? 20 : 0) : (widget.index == 0
+            ? 15
+            : 0),
         bottom: widget.isTablet ? 24 : 20,
       ),
       child: Stack(
@@ -2162,7 +2205,9 @@ class _EditableContentCardState extends State<EditableContentCard> {
                 children: [
                   Row(
                     children: [
-                      _buildImageIcon('assets/images/icerik.png', widget.isTablet ? 18 : 16, widget.isTablet ? 16 : 14),
+                      _buildImageIcon(
+                          'assets/images/icerik.png', widget.isTablet ? 18 : 16,
+                          widget.isTablet ? 16 : 14),
                       SizedBox(width: widget.isTablet ? 6.0 : 5.0),
                       Expanded(
                         child: _isEditing
@@ -2203,7 +2248,9 @@ class _EditableContentCardState extends State<EditableContentCard> {
                     children: [
                       Row(
                         children: [
-                          _buildImageIcon('assets/images/saat.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
+                          _buildImageIcon('assets/images/saat.png',
+                              widget.isTablet ? 18 : 16,
+                              widget.isTablet ? 20 : 18),
                           SizedBox(width: widget.isTablet ? 8.0 : 6.0),
                           _buildDigitalTime(
                             widget.content['startTime'] as String,
@@ -2244,8 +2291,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
     );
   }
 
-  Widget _buildDigitalTime(
-      String time,
+  Widget _buildDigitalTime(String time,
       Color textColor,
       bool isTablet,
       bool isEditing, [
@@ -2280,7 +2326,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
       children: [
         for (int i = 0; i < time.length; i++)
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: time[i] == ':' ? 1.0 : 0.5),
+            padding: EdgeInsets.symmetric(
+                horizontal: time[i] == ':' ? 1.0 : 0.5),
             child: Text(
               time[i],
               style: TextStyle(
@@ -2317,7 +2364,16 @@ class _EditableContentCardState extends State<EditableContentCard> {
 
   Widget _buildToggleSwitch() {
     return GestureDetector(
-      onTap: _toggleSwitch,
+      onTap: () async {
+        int id = widget.index;
+        String tip =this.tip ;
+        bool isSwitchActive = this._isSwitchActive;
+
+        print("toogle tıklandı $id $tip $_isSwitchActive");
+
+        await _bluetooth.toogle(id: id, tip: tip ,status:isSwitchActive);
+        _toggleSwitch();
+      },
       child: Container(
         width: widget.isTablet ? 30 : 26,
         height: widget.isTablet ? 14 : 12,
@@ -2328,7 +2384,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
         ),
         child: AnimatedAlign(
           duration: Duration(milliseconds: 200),
-          alignment: _isSwitchActive ? Alignment.centerRight : Alignment.centerLeft,
+          alignment: _isSwitchActive ? Alignment.centerRight : Alignment
+              .centerLeft,
           child: Container(
             width: widget.isTablet ? 10 : 8,
             height: widget.isTablet ? 10 : 8,
@@ -2445,47 +2502,68 @@ class _EditableContentCardState extends State<EditableContentCard> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: widget.isTablet ? 48 : 0,
-                height: widget.isTablet ? 57 : 0,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFEFF9),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    topRight: Radius.circular(10),
+              GestureDetector(
+              key: ValueKey(widget.index),
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+
+                  print("artı tıklandı → id:$id tip:$tip");
+
+                  await _bluetooth.arti(id: id, tip: tip);
+                },
+                child: Container(
+                  width: widget.isTablet ? 48 : 0,
+                  height: widget.isTablet ? 57 : 0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFEFF9),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF52596C),
+                      width: 0.5,
+                    ),
                   ),
-                  border: Border.all(
-                    color: const Color(0xFF52596C),
-                    width: 0.5,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.add,
-                    size: widget.isTablet ? 18 : 16,
-                    color: const Color(0xFF1D1D1D),
+                  child: Center(
+                    child: Icon(
+                      Icons.add,
+                      size: widget.isTablet ? 18 : 16,
+                      color: const Color(0xFF1D1D1D),
+                    ),
                   ),
                 ),
               ),
-              Container(
-                width: widget.isTablet ? 48 : 0,
-                height: widget.isTablet ? 56 : 0,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFEFF9),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(10),
-                    bottomRight: Radius.circular(10),
+              GestureDetector(
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+
+                  print("eksi tıklandı → id:$id tip:$tip");
+
+                  await _bluetooth.eksi(id: id, tip: tip);
+                },
+                child: Container(
+                  width: widget.isTablet ? 48 : 0,
+                  height: widget.isTablet ? 56 : 0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFEFF9),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10),
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF52596C),
+                      width: 0.5,
+                    ),
                   ),
-                  border: Border.all(
-                    color: const Color(0xFF52596C),
-                    width: 0.5,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.remove,
-                    size: widget.isTablet ? 18 : 16,
-                    color: const Color(0xFF1D1D1D),
+                  child: Center(
+                    child: Icon(
+                      Icons.remove,
+                      size: widget.isTablet ? 18 : 16,
+                      color: const Color(0xFF1D1D1D),
+                    ),
                   ),
                 ),
               ),
@@ -2496,7 +2574,14 @@ class _EditableContentCardState extends State<EditableContentCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onTap: widget.onDelete,
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+
+                  print("delete tıklandı → id:$id tip:$tip");
+
+                  await _bluetooth.delete(id: id, tip: tip);
+                },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
                   height: widget.isTablet ? 57 : 0,
@@ -2519,7 +2604,16 @@ class _EditableContentCardState extends State<EditableContentCard> {
               ),
               SizedBox(height: widget.isTablet ? 2 : 0),
               GestureDetector(
-                onTap: _togglePlay,
+                onTap: () async {
+                  int id = widget.index;
+                  String tip = this.tip;
+                  bool _isPlaying = this._isPlaying;
+
+                  print("play tıklandı → id:$id tip:$tip");
+
+                  await _bluetooth.playStatus(id: id, tip: tip, isPlaying:_isPlaying);
+                  _togglePlay();
+                },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
                   height: widget.isTablet ? 56 : 0,

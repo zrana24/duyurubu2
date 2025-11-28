@@ -628,34 +628,6 @@ class BluetoothService {
     _connectionStateController.add(state);
   }
 
-  /*void _handleIncomingData(String message) {
-    try {
-      Map<String, dynamic> jsonData = jsonDecode(message);
-      print('📊 JSON verisi alındı: $jsonData');
-
-      if (jsonData.containsKey('path')) {
-        receivedVideoPath = jsonData['path'];
-        print('✅ Path kaydedildi: $receivedVideoPath');
-      }
-
-      if (jsonData['status'] == 'ok') {
-        print('✅ İşlem başarılı');
-      }
-    } catch (e) {
-      print('⚠️ JSON parse hatası, regex deneniyor: $e');
-
-      try {
-        RegExp pathRegex = RegExp(r'"path"\s*:\s*"([^"]+)"');
-        Match? match = pathRegex.firstMatch(message);
-        if (match != null) {
-          receivedVideoPath = match.group(1);
-          print('✅ Path regex ile alındı: $receivedVideoPath');
-        }
-      } catch (regexError) {
-        print('❌ Regex hatası: $regexError');
-      }
-    }
-  }*/
 
   Future<void> sendDataToDevice(String macAddress, Map<String, dynamic> data) async {
     try {
@@ -680,52 +652,147 @@ class BluetoothService {
     }
   }
 
-  Future<void> status({
+  Future<void> playStatus({
     required int id,
-    required bool status,
+    required bool isPlaying,
+    required String tip,
   })async{
-    Map<String, dynamic> data = {
-      "type": "status",
-      "id": id,
-      "status": status,
-    };
+
+    Map<String, dynamic> data = {};
+
+    if(tip == "isimlik"){
+      data = {
+        "type": "play_isimlik",
+        "id":id,
+
+      };
+    }
+    else if(tip == "bilgi"){
+      data = {
+        "type": "play_bilgi",
+        "id":id,
+      };
+    }
+    else{
+      print("Tip veri hatası $tip");
+    }
 
     await sendDataToDevice(connectedDeviceMacAddress!, data);
+    print(data);
   }
 
   Future<void> delete({
     required int id,
     required String tip,
   })async{
-    Map<String, dynamic> data = {
-      "type": "delete",
-      "id": id,
-      "tip": tip.trim(),
-    };
+
+    Map<String, dynamic> data = {};
+
+    if(tip == "isimlik"){
+      data = {
+        "type": "delete_isimlik",
+        "id": id,
+      };
+    }
+    else if(tip == "bilgi"){
+      data = {
+        "type": "delete_bilgi",
+        "id":id
+      };
+    }
 
     await sendDataToDevice(connectedDeviceMacAddress!, data);
+    await Future.delayed(Duration(seconds: 5));
+    await veri();
+    //print(data);
   }
 
   Future<void> arti({
     required int id,
+    required String tip,
   })async{
-    Map<String, dynamic> data = {
-      "type": "arti",
-      "id": id,
-    };
 
-    await sendDataToDevice(connectedDeviceMacAddress!, data);
+    Map<String, dynamic> data = {};
+
+    if(tip == "isimlik"){
+      data = {
+        "type": "isim_arttir",
+        "id":id,
+      };
+    }
+    else if(tip == "bilgi"){
+      data = {
+        "type": "bilgi_arttir",
+        "id":id
+      };
+    }
+    else{
+      print("Tip veri hatası $tip");
+    }
+
+    /*await sendDataToDevice(connectedDeviceMacAddress!, data);
+    await Future.delayed(Duration(seconds: 5));
+    await veriWithImages();*/
+    print(data);
   }
 
   Future<void> eksi({
     required int id,
+    required String tip,
   })async{
-    Map<String, dynamic> data = {
-      "type": "eksi",
-      "id": id,
-    };
+    Map<String, dynamic> data = {};
 
-    await sendDataToDevice(connectedDeviceMacAddress!, data);
+    if(tip == "isimlik"){
+      data = {
+        "type": "isim_azalt",
+        "id":id,
+      };
+    }
+    else if(tip == "bilgi"){
+      data = {
+        "type": "bilgi_azalt",
+        "id":id
+      };
+    }
+    else{
+      print("Tip veri hatası $tip");
+    }
+
+    /*await sendDataToDevice(connectedDeviceMacAddress!, data);
+    await Future.delayed(Duration(seconds: 5));
+    await veriWithImages();*/
+    print(data);
+  }
+
+  Future<void> toogle({
+    required int id,
+    required String tip,
+    required bool status,
+  })async{
+    Map<String, dynamic> data = {};
+
+    if(tip == "isimlik"){
+      data = {
+        "type": "isim_toogle",
+        "id":id,
+        "status":status,
+      };
+    }
+    else if(tip == "bilgi"){
+      data = {
+        "type": "bilgi_toogle",
+        "id":id,
+        "status":status,
+      };
+    }
+    else{
+      print("Tip veri hatası $tip");
+    }
+
+    /*await sendDataToDevice(connectedDeviceMacAddress!, data);
+    await Future.delayed(Duration(seconds: 5));
+    await veriWithImages();*/
+    print(data);
   }
 
   Future<void> isimlikAdd({
@@ -937,39 +1004,26 @@ class BluetoothService {
         cancelOnError: true,
       );
 
-      // 🔥 Path gelene kadar bekle
       await completer.future;
 
-      /// -----------------------------------------------------
 
       print("✔✔✔ SON PATH: $receivedVideoPath");
-
-
-
-
-
-
 
 
       print("📊 ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB - Süre: ${totalTime.inSeconds}s - Ort. Hız: ${avgSpeed.toStringAsFixed(2)} MB/s");
 
       _sendNotification('✅ Video başarıyla gönderildi: $name', 'success');
 
-       //_waitForServerResponse();
        print("çalıştım knk $receivedVideoPath");
 
-    } catch (e, stackTrace) {
+    }
+    catch (e, stackTrace) {
       print("❌ Video gönderme hatası: $e");
       print("StackTrace:\n$stackTrace");
       _sendNotification('❌ Video gönderilemedi', 'error');
       rethrow;
     }
   }
-
-
-
-
-
 
 
   Future<void> _waitForServerResponse() async {
@@ -994,21 +1048,6 @@ class BluetoothService {
 
     await completer.future;
   }
-
-  /*Future<void> photoSend({
-    required String imagePath,
-    required String imageName,
-  }) async {
-    try {
-      print('Fotoğraf gönderiliyor: $imageName, yol: $imagePath');
-      receivedVideoPath=imagePath;
-      _sendNotification('✅ Fotoğraf hazırlandı: $imageName', 'success');
-    } catch (e) {
-      print('Fotoğraf gönderme hatası: $e');
-      _sendNotification('❌ Fotoğraf gönderilemedi', 'error');
-      rethrow;
-    }
-  }*/
 
   Future<void> bilgiAdd({
     required String meeting_title,
@@ -1125,7 +1164,6 @@ class BluetoothService {
     try {
       String jsonStr = await veri();
 
-      // Gelen veriyi debug için yazdır (ilk 500 karakter)
       print('📥 Gelen veri önizleme: ${jsonStr.substring(0, math.min(500, jsonStr
           .length))}');
       print('📊 Toplam uzunluk: ${jsonStr.length}');
@@ -1161,17 +1199,6 @@ class BluetoothService {
 
           return await veriWithImages();
 
-
-
-
-          // Son çare: string'i direkt JSON olarak parse etmeyi dene
-          try {
-            parsedData = jsonDecode(jsonStr);
-            print('✅ String direkt JSON olarak parse edilebildi');
-          } catch (e2) {
-            print('❌ Tüm parse denemeleri başarısız: $e2');
-            throw Exception('Geçersiz veri formatı: $e2');
-          }
         }
       }
 
