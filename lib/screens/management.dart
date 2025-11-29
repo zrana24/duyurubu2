@@ -295,7 +295,9 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
         }).toList();
         _isLoading = false;
       });
-    } else {
+      print(_speakers);
+    }
+    else {
       setState(() => _isLoading = false);
     }
   }
@@ -572,10 +574,15 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     });
   }
 
-  void _deleteSpeaker(int index) {
+  void _deleteSpeaker(int index) async {
     setState(() {
       _speakers.removeAt(index);
     });
+
+    if (mounted) {
+      final parentState = context.findAncestorStateOfType<_ManagementState>();
+      await parentState?._loadSharedData();
+    }
   }
 
   Color _getCardColor(int index) {
@@ -781,7 +788,6 @@ class _ContentManagementState extends State<ContentManagement> {
 
       setState(() {
         _contents = bilgiList.map((item) {
-          // ✅ Artık thumbnailImage key'ini kullan
           Image? thumbnail = item['thumbnailImage'];
 
           return {
@@ -795,7 +801,7 @@ class _ContentManagementState extends State<ContentManagement> {
             'isActive': item['is_active'] ?? false,
             'buttonStatus': item['button_status'] ?? false,
             'thumbnailBase64': item['thumbnailBase64'] ?? '',
-            'thumbnail': thumbnail, // ✅ Hazır Image widget
+            'thumbnail': thumbnail,
           };
         }).toList();
         _isLoading = false;
@@ -1203,10 +1209,15 @@ class _ContentManagementState extends State<ContentManagement> {
     });
   }
 
-  void _deleteContent(int index) {
+  void _deleteContent(int index) async {
     setState(() {
       _contents.removeAt(index);
     });
+
+    if (mounted) {
+      final parentState = context.findAncestorStateOfType<_ManagementState>();
+      await parentState?._loadSharedData();
+    }
   }
 
   void _exportToComputer() async {

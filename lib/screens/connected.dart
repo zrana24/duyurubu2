@@ -702,9 +702,9 @@ class BluetoothService {
     }
 
     await sendDataToDevice(connectedDeviceMacAddress!, data);
-    await Future.delayed(Duration(seconds: 5));
-    await veri();
-    //print(data);
+    print(data);
+    await Future.delayed(Duration(seconds: 3));
+    await veriWithImages();
   }
 
   Future<void> arti({
@@ -1025,29 +1025,18 @@ class BluetoothService {
     }
   }
 
-
-  Future<void> _waitForServerResponse() async {
-    final completer = Completer<void>();
-    StreamSubscription<String>? responseSubscription;
-
-
-
-    responseSubscription = _incomingDataController.stream.listen((message) {
-      try {
-
-      } catch (e) {
-        print('⚠️ Yanıt parse hatası: $e');
+  bool _endsWithMarker(List<int> data, List<int> marker) {
+    if (data.length < marker.length) return false;
+    for (int i = 0; i < marker.length; i++) {
+      if (data[data.length - marker.length + i] != marker[i]) {
+        return false;
       }
-
-
-      responseSubscription?.cancel();
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    });
-
-    await completer.future;
+    }
+    return true;
   }
+
+
+
 
   Future<void> bilgiAdd({
     required String meeting_title,
@@ -1081,82 +1070,58 @@ class BluetoothService {
   bool _veriIsRunning = false;
 
   Future<String> veri() async {
-    if (_veriIsRunning) {
-      print("⚠️ veri() zaten çalışıyor, yeni çağrı iptal edildi.");
-      return "";
-    }
+    if (_veriIsRunning) return "";
 
     _veriIsRunning = true;
+
     try {
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
-        print('⚠️ Bağlantı aktif değil, yeniden bağlanılıyor...');
         await connectToCsServer(connectedDeviceMacAddress!);
-        await Future.delayed(Duration(milliseconds: 1000));
+        await Future.delayed(Duration(milliseconds: 500));
       }
 
-      Map<String, dynamic> data = {
+      await sendDataToDevice(connectedDeviceMacAddress!, {
         "type": "full_data",
-      };
+      });
 
-      await sendDataToDevice(connectedDeviceMacAddress!, data);
-      print("⏳ server yanıtı bekleniyor...");
+      final endMarker = utf8.encode("###END###");
+      List<int> allBytes = [];
+      final completer = Completer<String>();
 
       _dataSubscription?.cancel();
 
-      final completer = Completer<String>();
-      String toplam = "";
+      late StreamSubscription<Uint8List> sub;   // 🔥 BURASI ÖNEMLİ
 
-      _dataSubscription = _connectionInputStream!.listen(
+      sub = _connectionInputStream!.listen(
             (Uint8List packet) {
-          String msg = String.fromCharCodes(packet).trim();
+          allBytes.addAll(packet);
 
-          if (msg.isEmpty) return;
+          if (_endsWithMarker(allBytes, endMarker)) {
+            final pureBytes = allBytes.sublist(0, allBytes.length - endMarker.length);
+            String jsonStr = utf8.decode(pureBytes);
 
-          if (msg != "bitti") {
-            toplam += msg;
-            print("📥 Parça alındı, toplam uzunluk: ${toplam.length}");
-          } else {
-            print("✅ Tüm veri alındı, uzunluk: ${toplam.length}");
-
-            toplam = toplam.replaceAll("bitti", "");
-
-            _dataSubscription?.cancel();
-            completer.complete(toplam);
+            sub.cancel();
+            completer.complete(jsonStr.trim());
           }
         },
         onError: (e) {
-          print('Veri alma hatası: $e');
-          _dataSubscription?.cancel();
           if (!completer.isCompleted) completer.completeError(e);
         },
         onDone: () {
-          print('⚠️ Stream kapandı');
-          _dataSubscription?.cancel();
           if (!completer.isCompleted) {
-            print('📨 Mevcut veri gönderiliyor: ${toplam.length} karakter');
-            completer.complete(toplam);
+            completer.complete(utf8.decode(allBytes).trim());
           }
         },
         cancelOnError: true,
       );
 
-      return await completer.future.timeout(
-        Duration(seconds: 30),
-        onTimeout: () {
-          _dataSubscription?.cancel();
-          throw TimeoutException('Veri alma işlemi 30 saniye içinde tamamlanmadı');
-        },
-      );
-    } catch (e, stackTrace) {
-      print('veri() fonksiyonu hatası: $e');
-      print('Stack Trace: $stackTrace');
-      _dataSubscription?.cancel();
-      rethrow;
+      _dataSubscription = sub;
+
+      return await completer.future.timeout(Duration(seconds: 20));
     } finally {
       _veriIsRunning = false;
     }
   }
-
 
 
 
@@ -1195,6 +1160,7 @@ class BluetoothService {
           }
         } catch (e) {
           print('❌ Base64 decode başarısız: $e');
+
           await Future.delayed(Duration(seconds: 4)); // 🔥 2 saniye bekleme
 
           return await veriWithImages();
@@ -1260,9 +1226,6 @@ class BluetoothService {
 
     }
   }
-
-
-
     Future<void> parlaklik({
     required String id,
     required String value,
