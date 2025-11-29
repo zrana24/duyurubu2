@@ -4,6 +4,7 @@ import 'language.dart';
 import '../screens/settings.dart';
 import '../screens/connect.dart';
 import '../screens/management.dart';
+import '../screens/connected.dart';
 
 class ImageWidget extends StatefulWidget {
   final double? height;
@@ -24,6 +25,7 @@ class ImageWidget extends StatefulWidget {
 }
 
 class _ImageWidgetState extends State<ImageWidget> {
+  final BluetoothService _bluetooth = BluetoothService();
   @override
   Widget build(BuildContext context) {
     return Consumer<LanguageProvider>(
@@ -81,7 +83,7 @@ class _ImageWidgetState extends State<ImageWidget> {
                 _buildNavButton(
                   context: context,
                   text: languageProvider.getTranslation('content_management') ?? "İÇERİK YÖNETİMİ",
-                  icon: 'assets/images/icerik.png', 
+                  icon: 'assets/images/icerik.png',
                   isActive: widget.activePage == "management",
                   onTap: () {
                     Navigator.push(
@@ -95,7 +97,7 @@ class _ImageWidgetState extends State<ImageWidget> {
                 _buildNavButton(
                   context: context,
                   text: languageProvider.getTranslation('settings') ?? "AYARLAR",
-                  icon: Icons.settings_outlined, 
+                  icon: Icons.settings_outlined,
                   isActive: widget.activePage == "settings",
                   onTap: () {
                     Navigator.push(
@@ -108,7 +110,7 @@ class _ImageWidgetState extends State<ImageWidget> {
                 Spacer(),
                 _buildIconButton(
                   context: context,
-                  icon: 'assets/images/eslestirme.png', 
+                  icon: 'assets/images/eslestirme.png',
                   label: languageProvider.getTranslation('pairing') ?? "EŞLEŞTİRME",
                   isActive: isConnectPage,
                   onTap: () {
@@ -122,7 +124,7 @@ class _ImageWidgetState extends State<ImageWidget> {
                 SizedBox(width: 12),
                 _buildIconButton(
                   context: context,
-                  icon: 'assets/images/dil.png', 
+                  icon: 'assets/images/dil.png',
                   label: languageProvider.getTranslation('language_selection') ?? "DİL SEÇİMİ",
                   isActive: widget.activePage == "language",
                   onTap: () {
@@ -143,12 +145,36 @@ class _ImageWidgetState extends State<ImageWidget> {
   Widget _buildNavButton({
     required BuildContext context,
     required String text,
-    required dynamic icon, 
+    required dynamic icon,
     required bool isActive,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        if (!BluetoothService.hasActiveConnection()) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Önce bir cihaza bağlanmalısınız!',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+        onTap();
+      }, // BU PARANTEZ VE VIRGÜL EKSİKTİ
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: AnimatedContainer(
@@ -161,7 +187,6 @@ class _ImageWidgetState extends State<ImageWidget> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              
               if (icon is IconData)
                 Icon(
                   icon,
@@ -198,7 +223,7 @@ class _ImageWidgetState extends State<ImageWidget> {
 
   Widget _buildIconButton({
     required BuildContext context,
-    required String icon, 
+    required String icon,
     required String label,
     required bool isActive,
     required VoidCallback onTap,

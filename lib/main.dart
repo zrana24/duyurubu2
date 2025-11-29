@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'screens/management.dart';
+import 'screens/connect.dart';
 import 'language.dart';
 import 'bluetooth_provider.dart';
 
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: const Management(),
+          home: ConnectPage(),
         );
       },
     );

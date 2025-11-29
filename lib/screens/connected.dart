@@ -85,6 +85,13 @@ class BluetoothService {
     _connectedDeviceMacAddress = macAddress;
   }
 
+  static bool hasActiveConnection() {
+    return _connectedDeviceMacAddress != null &&
+        _instance._isConnectionActive &&
+        _instance._connection != null &&
+        _instance._connection!.isConnected;
+  }
+
 
   Stream<blue_plus.BluetoothAdapterState> get bluetoothStateStream => _bluetoothStateController.stream;
   Stream<BluetoothServiceState> get connectionStateStream => _connectionStateController.stream;
@@ -704,7 +711,7 @@ class BluetoothService {
     await sendDataToDevice(connectedDeviceMacAddress!, data);
     print(data);
     await Future.delayed(Duration(seconds: 3));
-    await veriWithImages();
+
   }
 
   Future<void> arti({

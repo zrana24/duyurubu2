@@ -577,12 +577,20 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   void _deleteSpeaker(int index) async {
     setState(() {
       _speakers.removeAt(index);
+      final parentState = context.findAncestorStateOfType<_ManagementState>();
+       parentState?._loadSharedData();
+       print("ben çalıştım amca");
     });
 
-    if (mounted) {
-      final parentState = context.findAncestorStateOfType<_ManagementState>();
-      await parentState?._loadSharedData();
-    }
+
+
+
+
+
+
+
+
+
   }
 
   Color _getCardColor(int index) {
@@ -1918,6 +1926,8 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                   print("delete tıklandı $tip ve $id");
 
                   await _bluetooth.delete(id: id, tip: tip);
+                  final parentState = context.findAncestorStateOfType<_ManagementState>();
+                  parentState?._loadSharedData();
                 },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
@@ -2592,6 +2602,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
                   print("delete tıklandı → id:$id tip:$tip");
 
                   await _bluetooth.delete(id: id, tip: tip);
+                  final parentState = context.findAncestorStateOfType<_ManagementState>();
+                  parentState?._loadSharedData();
                 },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
