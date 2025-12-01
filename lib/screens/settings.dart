@@ -127,6 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     fillAvailableSpace: true,
                     showVolume: false,
                     isMainScreen: false,
+                    screenType: 'name', 
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.02),
@@ -159,6 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     fillAvailableSpace: true,
                     showVolume: false,
                     isMainScreen: false,
+                    screenType: 'info', 
                   ),
                 ),
               ],
@@ -229,7 +231,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           context,
                           title: languageProvider.getTranslation('name_screen1'),
                           brightnessValue: _nameScreenBrightness,
-                          volumeValue: 0.0 ,
+                          volumeValue: 0.0,
                           onBrightnessChanged: (value) {
                             setState(() {
                               _nameScreenBrightness = value;
@@ -248,6 +250,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           fillAvailableSpace: true,
                           showVolume: false,
                           isMainScreen: false,
+                          screenType: 'name', 
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.02),
@@ -256,7 +259,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           context,
                           title: languageProvider.getTranslation('info_screen'),
                           brightnessValue: _infoScreenBrightness,
-                          volumeValue: 0.0 ,
+                          volumeValue: 0.0,
                           onBrightnessChanged: (value) {
                             setState(() {
                               _infoScreenBrightness = value;
@@ -275,6 +278,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           fillAvailableSpace: true,
                           showVolume: false,
                           isMainScreen: false,
+                          screenType: 'info', 
                         ),
                       ),
                     ],
@@ -302,6 +306,7 @@ class _SettingsPageState extends State<SettingsPage> {
         bool fillAvailableSpace = false,
         bool showVolume = true,
         bool isMainScreen = false,
+        String screenType = 'normal', 
       }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardPadding = isTablet ? 12.0 : 16.0;
@@ -309,13 +314,15 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       width: double.infinity,
       height: fillAvailableSpace ? null : null,
-      constraints: fillAvailableSpace ? BoxConstraints(
+      constraints: fillAvailableSpace
+          ? BoxConstraints(
         minHeight: showVolume ? 180 : 120,
-      ) : null,
+      )
+          : null,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD0F9F9), width: 2),
+        border: Border.all(color: const Color(0xFF1D7269), width: 2), 
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -334,7 +341,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFF00D0C6),
+              color: const Color(0xFFD0F9F9),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -342,16 +349,30 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             child: Row(
               children: [
-                isMainScreen
-                    ? Image.asset(
-                  'assets/images/kursu.png',
-                  width: isTablet ? 22 : 24,
-                  height: isTablet ? 22 : 24,
-                  color: const Color(0xFF1D7269),
-                )
-                    : Icon(Icons.devices_other,
+                if (isMainScreen)
+                  Image.asset(
+                    'assets/images/kursu.png',
+                    width: isTablet ? 22 : 24,
+                    height: isTablet ? 22 : 24,
                     color: const Color(0xFF1D7269),
-                    size: isTablet ? 18 : 20),
+                  )
+                else if (screenType == 'name')
+                  Image.asset(
+                    'assets/images/logo2.png',
+                    width: isTablet ? 22 : 24,
+                    height: isTablet ? 22 : 24,
+                    color: const Color(0xFF1D7269),
+                  )
+                else if (screenType == 'info')
+                    Image.asset(
+                      'assets/images/3car.png',
+                      width: isTablet ? 22 : 24,
+                      height: isTablet ? 22 : 24,
+                      color: const Color(0xFF1D7269),
+                    )
+                  else
+                    Icon(Icons.devices_other,
+                        color: const Color(0xFF1D7269), size: isTablet ? 18 : 20),
                 SizedBox(width: isTablet ? 6 : 8),
                 Expanded(
                   child: Text(
@@ -382,7 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: Color(0xFF5A6B7C), width: 1),
+                        side: BorderSide(color: Colors.black, width: 1),
                       ),
                       child: Container(
                         padding: EdgeInsets.all(isTablet ? 12 : 16),
@@ -399,7 +420,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Color(0xFF5A6B7C), width: 1),
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
@@ -415,7 +435,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                   width: containerWidth * brightnessValue,
                                                   height: double.infinity,
                                                   decoration: BoxDecoration(
-                                                    color: Color(0xFF5A6B7C),
+                                                    color: Colors.grey[600],
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                 ),
@@ -471,7 +491,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               'assets/images/parlaklik.png',
                               width: isTablet ? 28 : 32,
                               height: isTablet ? 28 : 32,
-                              color: Color(0xFF9E9E9E),
+                              color: Colors.grey,
                             ),
                           ],
                         ),
@@ -507,7 +527,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Color(0xFF5A6B7C), width: 1),
+                          side: BorderSide(color: Colors.black, width: 1),
                         ),
                         child: Container(
                           padding: EdgeInsets.all(isTablet ? 12 : 16),
@@ -524,7 +544,6 @@ class _SettingsPageState extends State<SettingsPage> {
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Color(0xFF5A6B7C), width: 1),
                                       ),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
@@ -540,7 +559,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                     width: containerWidth * volumeValue,
                                                     height: double.infinity,
                                                     decoration: BoxDecoration(
-                                                      color: Color(0xFF5A6B7C),
+                                                      color: Colors.grey[600],
                                                       borderRadius: BorderRadius.circular(8),
                                                     ),
                                                   ),
@@ -596,7 +615,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 'assets/images/ses.png',
                                 width: isTablet ? 28 : 32,
                                 height: isTablet ? 28 : 32,
-                                color: Color(0xFF9E9E9E),
+                                color: Colors.grey, 
                               ),
                             ],
                           ),

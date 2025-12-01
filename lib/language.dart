@@ -35,7 +35,7 @@ class LanguageProvider extends ChangeNotifier {
       'fill_all_fields': 'Lütfen tüm alanları doldurun!',
       'invalid_time': 'Lütfen geçerli bir süre formatı girin! (SS:DD:SS)',
       'added_success': 'Konuşmacı başarıyla eklendi!',
-      'language_options': 'DİL SEÇENEKLERİ',
+      'language_options': 'DİL SEÇENEKLİ',
       'selected_language': 'dili seçildi',
       'select_button': 'SEÇ',
       'paired_podiums': 'EŞLEŞMİŞ KÜRSÜLER',
@@ -288,10 +288,10 @@ class LanguagePage extends StatelessWidget {
   const LanguagePage({Key? key}) : super(key: key);
 
   static const List<Map<String, String>> _languages = [
-    {'code': 'tr', 'name': 'TÜRKÇE', 'flag': '🇹🇷'},
-    {'code': 'en', 'name': 'ENGLISH', 'flag': '🇺🇸'},
-    {'code': 'ru', 'name': 'РУССКИЙ', 'flag': '🇷🇺'},
-    {'code': 'ar', 'name': 'اللغة العربية', 'flag': '🇸🇦'},
+    {'code': 'tr', 'name': 'TÜRKÇE', 'flag': 'assets/images/flag1.png'},
+    {'code': 'en', 'name': 'ENGLISH', 'flag': 'assets/images/flag2.png'},
+    {'code': 'ru', 'name': 'РУССКИЙ', 'flag': 'assets/images/flag3.png'},
+    {'code': 'ar', 'name': 'اللغة العربية', 'flag': 'assets/images/flag4.png'},
   ];
 
   void _selectLanguage(BuildContext context, Map<String, String> lang) {
@@ -317,30 +317,34 @@ class LanguagePage extends StatelessWidget {
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8EAF6),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            ImageWidget(activePage: "language"),
+            Container(
+              height: 60,
+              width: double.infinity,
+              child: ImageWidget(activePage: "language"),
+            ),
             Expanded(
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.symmetric(
-                  horizontal: screenWidth * 0.03,
-                  vertical: screenHeight * 0.01,
-                ),
-                child: ListView.builder(
-                  itemCount: _languages.length,
-                  padding: EdgeInsets.all(screenWidth * 0.03),
-                  itemBuilder: (context, index) {
-                    final lang = _languages[index];
-                    bool isSelected =
-                        languageProvider.locale.languageCode == lang['code'];
-                    return Container(
-                      margin: EdgeInsets.only(bottom: screenHeight * 0.015),
-                      child: _buildLanguageCard(context, lang, isSelected, isTablet, screenWidth, screenHeight),
-                    );
-                  },
+                color: Colors.white,
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: _languages.map((lang) {
+                        bool isSelected =
+                            languageProvider.locale.languageCode == lang['code'];
+                        return Container(
+                          margin: EdgeInsets.only(bottom: screenHeight * 0.02),
+                          child: _buildLanguageCard(context, lang, isSelected, isTablet, screenWidth, screenHeight),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -354,17 +358,16 @@ class LanguagePage extends StatelessWidget {
     return GestureDetector(
       onTap: () => _selectLanguage(context, lang),
       child: Container(
-        width: double.infinity,
-        height: isTablet ? screenHeight * 0.1 : screenHeight * 0.08,
-        margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+        width: isTablet ? screenWidth * 0.65 : screenWidth * 0.8, // GENİŞLİK KÜÇÜLTÜLDÜ
+        height: isTablet ? screenHeight * 0.1 : screenHeight * 0.085,
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFC5CAE9) : Colors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF37474F)
+                ? Colors.black
                 : const Color(0xFFC5CAE9),
-            width: 2,
+            width: isSelected ? 3 : 2,
           ),
           boxShadow: [
             BoxShadow(
@@ -379,13 +382,33 @@ class LanguagePage extends StatelessWidget {
           children: [
             Container(
               width: isTablet ? screenWidth * 0.12 : screenWidth * 0.15,
-              padding: EdgeInsets.all(isTablet ? 12 : 8),
               child: Center(
-                child: Text(
+                child: Image.asset(
                   lang['flag']!,
-                  style: TextStyle(
-                    fontSize: isTablet ? 24 : screenWidth * 0.08,
-                  ),
+                  width: isTablet ? 32 : 28,
+                  height: isTablet ? 24 : 20,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Resim yüklenemezse dil kodunu göster
+                    return Container(
+                      width: isTablet ? 32 : 28,
+                      height: isTablet ? 24 : 20,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Center(
+                        child: Text(
+                          lang['code']!.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: isTablet ? 12 : 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -393,8 +416,8 @@ class LanguagePage extends StatelessWidget {
             Expanded(
               child: Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 12 : 8,
-                  vertical: isTablet ? 12 : 8,
+                  horizontal: isTablet ? 10 : 8,
+                  vertical: isTablet ? 10 : 8,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -403,10 +426,12 @@ class LanguagePage extends StatelessWidget {
                     Text(
                       lang['name']!,
                       style: TextStyle(
-                        fontSize: isTablet ? 18 : screenWidth * 0.04,
+                        fontSize: isTablet ? 16 : screenWidth * 0.038,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF37474F),
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

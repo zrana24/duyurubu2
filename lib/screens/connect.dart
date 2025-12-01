@@ -733,7 +733,7 @@ class _ConnectPageState extends State<ConnectPage> {
         required bool isTablet,
       }) {
     bool isPaired = title == languageProvider.getTranslation('paired_podiums');
-    Color headerColor = const Color(0xFF4DB6AC);
+    Color headerColor = const Color(0xFFD0F9F9);
     Color headerTextColor = const Color(0xFF00695C);
     IconData titleIcon = isPaired ? Icons.bluetooth_connected : Icons.bluetooth_searching;
 
@@ -742,7 +742,7 @@ class _ConnectPageState extends State<ConnectPage> {
       height: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: headerColor, width: 1.5),
+        border: Border.all(color: headerTextColor, width: 1.5),
         color: Colors.white,
       ),
       child: Column(
