@@ -79,6 +79,53 @@ class LanguageProvider extends ChangeNotifier {
       'department_example': 'Örn: İnsan Kaynakları Müdürü',
       'name_example': 'Örn: Ahmet Yılmaz',
       'duration_example': 'Örn: 00:30:00',
+      'name_screen_header': 'İSİMLİK EKRANI',
+      'add_speaker_btn': 'İSİM EKLE',
+      'speaker_badge': 'KONUŞMACI BİLGİSİ',
+      'no_speakers_found': 'Konuşmacı bulunamadı',
+
+      
+      'info_screen_header': 'BİLGİ EKRANI',
+      'add_content_btn': 'İÇERİK EKLE',
+      'export_computer_btn': 'BİLGİSAYARA AKTAR',
+      'content_badge': 'İÇERİK',
+      'no_content_found': 'İçerik bulunamadı',
+
+      
+      'department_label': 'Bölüm/Departman',
+      'fullname_label': 'Ad Soyad',
+      'time_placeholder': '00:00:00',
+      'active_status_label': 'Aktif Durum',
+      'active_button_label': 'Aktif Buton',
+      'sending_bluetooth': 'Bluetooth cihazına gönderiliyor...',
+      'add_button': 'Ekle',
+
+      'video_sending_title': 'Video Gönderiliyor',
+      'size_label': 'Boyut',
+      'video_sent_success': 'Video Gönderildi!\nŞimdi bilgileri girin.',
+      'sending_cancelled': 'Gönderim İptal Edildi',
+      'ok_button': 'Tamam',
+      'select_photo': 'Fotoğraf Seç',
+      'select_video': 'Video Seç',
+      'fill_all_fields': 'Lütfen tüm alanları doldurun',
+      'speaker_added_success': 'Konuşmacı başarıyla eklendi',
+      'speaker_updated_success': 'Konuşmacı başarıyla güncellendi',
+      'content_added_success': 'İçerik başarıyla eklendi ve cihaza gönderildi',
+      'invalid_time_format': 'Geçersiz zaman formatı',
+      'video_upload_cancelled': 'Video gönderimi iptal edildi',
+      'video_send_error': 'Video gönderilemedi',
+      'video_path_not_found': 'Video yolu bulunamadı. Lütfen önce video yükleyin.',
+      'export_no_content': 'Aktarılacak içerik bulunamadı.',
+      'data_load_error': 'Veri Yüklenemedi',
+      'retry_button': 'Tekrar Dene',
+
+      
+      'save_button': 'KAYDET',
+      'cancel_button': 'İPTAL',
+
+      
+      'video_label': 'Video',
+
     },
     'en': {
       'name_screen': 'NAME SCREEN',
@@ -142,6 +189,57 @@ class LanguageProvider extends ChangeNotifier {
       'department_example': 'Ex: Human Resources Manager',
       'name_example': 'Ex: John Smith',
       'duration_example': 'Ex: 00:30:00',
+      'name_screen_header': 'NAME SCREEN',
+      'add_speaker_btn': 'ADD NAME',
+      'speaker_badge': 'SPEAKER INFO',
+      'no_speakers_found': 'No speakers found',
+
+      
+      'info_screen_header': 'INFO SCREEN',
+      'add_content_btn': 'ADD CONTENT',
+      'export_computer_btn': 'EXPORT TO COMPUTER',
+      'content_badge': 'CONTENT',
+      'no_content_found': 'No content found',
+
+      
+      'department_label': 'Department/Division',
+      'fullname_label': 'Full Name',
+      'time_placeholder': '00:00:00',
+      'active_status_label': 'Active Status',
+      'active_button_label': 'Active Button',
+      'sending_bluetooth': 'Sending to Bluetooth device...',
+      'add_button': 'Add',
+
+      
+      'video_sending_title': 'Sending Video',
+      'size_label': 'Size',
+      'video_sent_success': 'Video Sent!\nNow enter the information.',
+      'sending_cancelled': 'Sending Cancelled',
+      'ok_button': 'OK',
+
+      
+      'select_photo': 'Select Photo',
+      'select_video': 'Select Video',
+
+      
+      'fill_all_fields': 'Please fill in all fields',
+      'speaker_added_success': 'Speaker successfully added',
+      'speaker_updated_success': 'Speaker successfully updated',
+      'content_added_success': 'Content successfully added and sent to device',
+      'invalid_time_format': 'Invalid time format',
+      'video_upload_cancelled': 'Video upload cancelled',
+      'video_send_error': 'Video could not be sent',
+      'video_path_not_found': 'Video path not found. Please upload video first.',
+      'export_no_content': 'No content to export.',
+      'data_load_error': 'Data Could Not Be Loaded',
+      'retry_button': 'Try Again',
+
+      
+      'save_button': 'SAVE',
+      'cancel_button': 'CANCEL',
+
+      
+      'video_label': 'Video',
     },
     'ru': {
       'name_screen': 'ЭКРАН ИМЕН',
@@ -205,6 +303,57 @@ class LanguageProvider extends ChangeNotifier {
       'department_example': 'Напр: Менеджер по персоналу',
       'name_example': 'Напр: Иван Иванов',
       'duration_example': 'Напр: 00:30:00',
+      'name_screen_header': 'ЭКРАН ИМЕН',
+      'add_speaker_btn': 'ДОБАВИТЬ ИМЯ',
+      'speaker_badge': 'ИНФОРМАЦИЯ О ДОКЛАДЧИКЕ',
+      'no_speakers_found': 'Докладчики не найдены',
+
+      
+      'info_screen_header': 'ИНФОРМАЦИОННЫЙ ЭКРАН',
+      'add_content_btn': 'ДОБАВИТЬ КОНТЕНТ',
+      'export_computer_btn': 'ЭКСПОРТ НА КОМПЬЮТЕР',
+      'content_badge': 'СОДЕРЖАНИЕ',
+      'no_content_found': 'Контент не найден',
+
+      
+      'department_label': 'Отдел/Подразделение',
+      'fullname_label': 'ФИО',
+      'time_placeholder': '00:00:00',
+      'active_status_label': 'Активный статус',
+      'active_button_label': 'Активная кнопка',
+      'sending_bluetooth': 'Отправка на устройство Bluetooth...',
+      'add_button': 'Добавить',
+
+      
+      'video_sending_title': 'Отправка видео',
+      'size_label': 'Размер',
+      'video_sent_success': 'Видео отправлено!\nТеперь введите информацию.',
+      'sending_cancelled': 'Отправка отменена',
+      'ok_button': 'ОК',
+
+      
+      'select_photo': 'Выбрать фото',
+      'select_video': 'Выбрать видео',
+
+      
+      'fill_all_fields': 'Пожалуйста, заполните все поля',
+      'speaker_added_success': 'Докладчик успешно добавлен',
+      'speaker_updated_success': 'Докладчик успешно обновлен',
+      'content_added_success': 'Контент успешно добавлен и отправлен на устройство',
+      'invalid_time_format': 'Неверный формат времени',
+      'video_upload_cancelled': 'Загрузка видео отменена',
+      'video_send_error': 'Не удалось отправить видео',
+      'video_path_not_found': 'Путь к видео не найден. Пожалуйста, сначала загрузите видео.',
+      'export_no_content': 'Нет контента для экспорта.',
+      'data_load_error': 'Не удалось загрузить данные',
+      'retry_button': 'Повторить',
+
+      
+      'save_button': 'СОХРАНИТЬ',
+      'cancel_button': 'ОТМЕНА',
+
+      
+      'video_label': 'Видео',
     },
     'ar': {
       'name_screen': 'شاشة الأسماء',
@@ -268,6 +417,57 @@ class LanguageProvider extends ChangeNotifier {
       'department_example': 'مثال: مدير الموارد البشرية',
       'name_example': 'مثال: أحمد محمد',
       'duration_example': 'مثال: 00:30:00',
+      'name_screen_header': 'شاشة الأسماء',
+      'add_speaker_btn': 'إضافة اسم',
+      'speaker_badge': 'معلومات المتحدث',
+      'no_speakers_found': 'لم يتم العثور على متحدثين',
+
+      
+      'info_screen_header': 'شاشة المعلومات',
+      'add_content_btn': 'إضافة محتوى',
+      'export_computer_btn': 'تصدير إلى الكمبيوتر',
+      'content_badge': 'المحتوى',
+      'no_content_found': 'لم يتم العثور على محتوى',
+
+      
+      'department_label': 'القسم/الإدارة',
+      'fullname_label': 'الاسم الكامل',
+      'time_placeholder': '00:00:00',
+      'active_status_label': 'الحالة النشطة',
+      'active_button_label': 'زر نشط',
+      'sending_bluetooth': 'الإرسال إلى جهاز البلوتوث...',
+      'add_button': 'إضافة',
+
+      
+      'video_sending_title': 'إرسال الفيديو',
+      'size_label': 'الحجم',
+      'video_sent_success': 'تم إرسال الفيديو!\nأدخل المعلومات الآن.',
+      'sending_cancelled': 'تم إلغاء الإرسال',
+      'ok_button': 'حسناً',
+
+      
+      'select_photo': 'اختر صورة',
+      'select_video': 'اختر فيديو',
+
+      
+      'fill_all_fields': 'يرجى ملء جميع الحقول',
+      'speaker_added_success': 'تمت إضافة المتحدث بنجاح',
+      'speaker_updated_success': 'تم تحديث المتحدث بنجاح',
+      'content_added_success': 'تمت إضافة المحتوى وإرساله إلى الجهاز بنجاح',
+      'invalid_time_format': 'تنسيق وقت غير صالح',
+      'video_upload_cancelled': 'تم إلغاء تحميل الفيديو',
+      'video_send_error': 'تعذر إرسال الفيديو',
+      'video_path_not_found': 'لم يتم العثور على مسار الفيديو. يرجى تحميل الفيديو أولاً.',
+      'export_no_content': 'لا يوجد محتوى للتصدير.',
+      'data_load_error': 'تعذر تحميل البيانات',
+      'retry_button': 'حاول مرة أخرى',
+
+      
+      'save_button': 'حفظ',
+      'cancel_button': 'إلغاء',
+
+      
+      'video_label': 'فيديو',
     },
   };
 
@@ -358,7 +558,7 @@ class LanguagePage extends StatelessWidget {
     return GestureDetector(
       onTap: () => _selectLanguage(context, lang),
       child: Container(
-        width: isTablet ? screenWidth * 0.65 : screenWidth * 0.8, // GENİŞLİK KÜÇÜLTÜLDÜ
+        width: isTablet ? screenWidth * 0.65 : screenWidth * 0.8, 
         height: isTablet ? screenHeight * 0.1 : screenHeight * 0.085,
         decoration: BoxDecoration(
           color: Colors.white,
@@ -389,7 +589,7 @@ class LanguagePage extends StatelessWidget {
                   height: isTablet ? 24 : 20,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    // Resim yüklenemezse dil kodunu göster
+                    
                     return Container(
                       width: isTablet ? 32 : 28,
                       height: isTablet ? 24 : 20,

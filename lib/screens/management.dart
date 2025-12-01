@@ -615,7 +615,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: isTablet ? 13 : 10,
-              vertical: isTablet ? 8 : 6, // BURASI DEĞİŞTİ (10->8, 8->6)
+              vertical: isTablet ? 8 : 6,
             ),
             child: Row(
               children: [
