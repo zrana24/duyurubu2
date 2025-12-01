@@ -582,15 +582,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
        print("ben çalıştım amca");
     });
 
-
-
-
-
-
-
-
-
-
   }
 
   Color _getCardColor(int index) {
@@ -598,7 +589,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     return colors[index % colors.length];
   }
 
-  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -607,7 +597,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     return Column(
       children: [
         Container(
-          height: isTablet ? 59 : 50,
+          height: isTablet ? 50 : 44,
           width: double.infinity,
           decoration: BoxDecoration(
             color: const Color(0xFFD0F9F9),
@@ -625,7 +615,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: isTablet ? 13 : 10,
-              vertical: isTablet ? 10 : 8,
+              vertical: isTablet ? 8 : 6, // BURASI DEĞİŞTİ (10->8, 8->6)
             ),
             child: Row(
               children: [
@@ -719,7 +709,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
               ),
             )
                 : SingleChildScrollView(
-              padding: EdgeInsets.only(top: isTablet ? 8 : 6),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1276,7 +1265,7 @@ class _ContentManagementState extends State<ContentManagement> {
     return Column(
       children: [
         Container(
-          height: isTablet ? 59 : 50,
+          height: isTablet ? 50 : 44,
           width: double.infinity,
           decoration: BoxDecoration(
             color: const Color(0xFFD0F9F9),
@@ -1429,7 +1418,6 @@ class _ContentManagementState extends State<ContentManagement> {
               ),
             )
                 : SingleChildScrollView(
-              padding: EdgeInsets.only(top: isTablet ? 8 : 6),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1860,7 +1848,6 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
 
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: widget.isTablet ? 10 : 8,
         vertical: verticalPadding,
       ),
       child: Text(
@@ -2450,7 +2437,6 @@ class _EditableContentCardState extends State<EditableContentCard> {
 
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: widget.isTablet ? 10 : 8,
         vertical: verticalPadding,
       ),
       child: Text(
