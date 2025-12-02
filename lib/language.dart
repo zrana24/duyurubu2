@@ -76,7 +76,7 @@ class LanguageProvider extends ChangeNotifier {
       'select_video': 'Video Seç',
       'select_document': 'Belge Seç',
       'document_selection': 'Belge seçme özelliği eklenecek',
-      'department_example': 'Örn: İnsan Kaynakları Müdürü',
+      'department_example': 'Örn: İnsan Kaynakları Müdürي',
       'name_example': 'Örn: Ahmet Yılmaz',
       'duration_example': 'Örn: 00:30:00',
       'name_screen_header': 'İSİMLİK EKRANI',
@@ -448,7 +448,7 @@ class LanguagePage extends StatelessWidget {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("${lang['name']} ${languageProvider.getTranslation('selected_language')}"),
+        content: Text("${lang['name']} ${languageProvider.getTranslation('selected_language')}", style: TextStyle(fontFamily: 'brandontext')),
         duration: const Duration(seconds: 1),
         backgroundColor: const Color(0xFF4DB6AC),
       ),
@@ -506,7 +506,7 @@ class LanguagePage extends StatelessWidget {
     return GestureDetector(
       onTap: () => _selectLanguage(context, lang),
       child: Container(
-        width: isTablet ? screenWidth * 0.65 : screenWidth * 0.8, 
+        width: isTablet ? screenWidth * 0.65 : screenWidth * 0.8,
         height: isTablet ? screenHeight * 0.1 : screenHeight * 0.085,
         decoration: BoxDecoration(
           color: Colors.white,
@@ -537,7 +537,7 @@ class LanguagePage extends StatelessWidget {
                   height: isTablet ? 24 : 20,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    
+
                     return Container(
                       width: isTablet ? 32 : 28,
                       height: isTablet ? 24 : 20,
@@ -552,6 +552,7 @@ class LanguagePage extends StatelessWidget {
                             fontSize: isTablet ? 12 : 10,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey[600],
+                            fontFamily: 'brandontext',
                           ),
                         ),
                       ),
@@ -577,6 +578,7 @@ class LanguagePage extends StatelessWidget {
                         fontSize: isTablet ? 16 : screenWidth * 0.038,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF37474F),
+                        fontFamily: 'brandontext',
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

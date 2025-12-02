@@ -11,7 +11,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  double _mainScreenBrightness = 0.23;
+  double _mainScreenBrightness = 1.0;
   double _mainScreenVolume = 1.0;
 
   double _nameScreenBrightness = 1.0;
@@ -127,7 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     fillAvailableSpace: true,
                     showVolume: false,
                     isMainScreen: false,
-                    screenType: 'name', 
+                    screenType: 'name',
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.02),
@@ -160,7 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     fillAvailableSpace: true,
                     showVolume: false,
                     isMainScreen: false,
-                    screenType: 'info', 
+                    screenType: 'info',
                   ),
                 ),
               ],
@@ -250,7 +250,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           fillAvailableSpace: true,
                           showVolume: false,
                           isMainScreen: false,
-                          screenType: 'name', 
+                          screenType: 'name',
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.02),
@@ -278,7 +278,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           fillAvailableSpace: true,
                           showVolume: false,
                           isMainScreen: false,
-                          screenType: 'info', 
+                          screenType: 'info',
                         ),
                       ),
                     ],
@@ -306,7 +306,7 @@ class _SettingsPageState extends State<SettingsPage> {
         bool fillAvailableSpace = false,
         bool showVolume = true,
         bool isMainScreen = false,
-        String screenType = 'normal', 
+        String screenType = 'normal',
       }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardPadding = isTablet ? 12.0 : 16.0;
@@ -322,7 +322,7 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF1D7269), width: 2), 
+        border: Border.all(color: const Color(0xFF1D7269), width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -379,8 +379,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     title,
                     style: TextStyle(
                       fontSize: isTablet ? 16 : 18,
-                      fontWeight: FontWeight.bold,
                       color: const Color(0xFF1D7269),
+                      fontFamily: 'brandontext',
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -435,7 +435,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                   width: containerWidth * brightnessValue,
                                                   height: double.infinity,
                                                   decoration: BoxDecoration(
-                                                    color: Colors.grey[700],
+                                                    color: Colors.grey[600],
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                 ),
@@ -448,8 +448,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                                     "${(brightnessValue * 100).round()}%",
                                                     style: TextStyle(
                                                       fontSize: isTablet ? 16 : 18,
-                                                      fontWeight: FontWeight.bold,
                                                       color: Colors.white,
+                                                      fontFamily: 'brandontext',
                                                     ),
                                                   ),
                                                 ),
@@ -508,9 +508,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           "EKRAN PARLAKLIGI",
                           style: TextStyle(
                             fontSize: isTablet ? 12 : 14,
-                            fontWeight: FontWeight.bold,
                             color: Colors.black,
                             backgroundColor: Colors.white,
+                            fontFamily: 'brandontext',
                           ),
                         ),
                       ),
@@ -559,7 +559,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                     width: containerWidth * volumeValue,
                                                     height: double.infinity,
                                                     decoration: BoxDecoration(
-                                                      color: Colors.grey[700],
+                                                      color: Colors.grey[600],
                                                       borderRadius: BorderRadius.circular(8),
                                                     ),
                                                   ),
@@ -572,8 +572,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                                       "${(volumeValue * 100).round()}%",
                                                       style: TextStyle(
                                                         fontSize: isTablet ? 16 : 18,
-                                                        fontWeight: FontWeight.bold,
                                                         color: Colors.white,
+                                                        fontFamily: 'brandontext',
                                                       ),
                                                     ),
                                                   ),
@@ -615,7 +615,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 'assets/images/ses.png',
                                 width: isTablet ? 28 : 32,
                                 height: isTablet ? 28 : 32,
-                                color: Colors.grey, 
+                                color: Colors.grey,
                               ),
                             ],
                           ),
@@ -632,9 +632,9 @@ class _SettingsPageState extends State<SettingsPage> {
                             languageProvider.getTranslation('volume_level'),
                             style: TextStyle(
                               fontSize: isTablet ? 12 : 14,
-                              fontWeight: FontWeight.bold,
                               color: Colors.black,
                               backgroundColor: Colors.white,
+                              fontFamily: 'brandontext',
                             ),
                           ),
                         ),

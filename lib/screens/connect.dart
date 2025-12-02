@@ -35,7 +35,7 @@ class _ConnectPageState extends State<ConnectPage> {
       _showNotificationSnackbar(notification);
     });
   }
-  
+
   void _showNotificationSnackbar(Map<String, dynamic> notification) {
     String message = notification['message'];
     String type = notification['type'];
@@ -72,7 +72,7 @@ class _ConnectPageState extends State<ConnectPage> {
                 message,
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'brandontext',
                 ),
               ),
             ),
@@ -93,7 +93,7 @@ class _ConnectPageState extends State<ConnectPage> {
   void dispose() {
     _pairedScrollController.dispose();
     _nearbyScrollController.dispose();
-    
+
     _notificationSubscription?.cancel();
     super.dispose();
   }
@@ -111,9 +111,10 @@ class _ConnectPageState extends State<ConnectPage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('İzin Gerekli'),
+        title: Text('İzin Gerekli', style: TextStyle(fontFamily: 'brandontext')),
         content: Text(
           'Bluetooth ve konum izinleri gereklidir. Lütfen ayarlardan izinleri açın.',
+          style: TextStyle(fontFamily: 'brandontext'),
         ),
         actions: [
           TextButton(
@@ -121,11 +122,11 @@ class _ConnectPageState extends State<ConnectPage> {
               openAppSettings();
               Navigator.pop(context);
             },
-            child: Text('Ayarlar'),
+            child: Text('Ayarlar', style: TextStyle(fontFamily: 'brandontext')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Kapat'),
+            child: Text('Kapat', style: TextStyle(fontFamily: 'brandontext')),
           ),
         ],
       ),
@@ -171,13 +172,13 @@ class _ConnectPageState extends State<ConnectPage> {
       String deviceName = _bluetoothService.getDeviceDisplayName(device);
       print('🔗 $deviceName cihazına bağlanılıyor...');
 
-      
+
       bluetoothProvider.setConnecting(true);
 
-      
+
       await _bluetoothService.connectToDevice(device);
 
-      
+
       bluetoothProvider.setConnectedDevice(device);
       setState(() => _selectedDevice = device);
       _showSnackbar('✅ Bağlandı: $deviceName', SnackbarType.success);
@@ -189,7 +190,7 @@ class _ConnectPageState extends State<ConnectPage> {
       _showSnackbar('❌ $errorMessage', SnackbarType.error);
       _showConnectionErrorDialog(deviceName, errorMessage);
 
-      
+
       bluetoothProvider.setConnecting(false);
     }
   }
@@ -213,23 +214,23 @@ class _ConnectPageState extends State<ConnectPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Bağlantı Hatası'),
+        title: Text('Bağlantı Hatası', style: TextStyle(fontFamily: 'brandontext')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$deviceName cihazına bağlanılamadı.'),
+            Text('$deviceName cihazına bağlanılamadı.', style: TextStyle(fontFamily: 'brandontext')),
             SizedBox(height: 8),
             Text(
               errorMessage,
-              style: TextStyle(color: Colors.red, fontSize: 12),
+              style: TextStyle(color: Colors.red, fontSize: 12, fontFamily: 'brandontext'),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Tamam'),
+            child: Text('Tamam', style: TextStyle(fontFamily: 'brandontext')),
           ),
         ],
       ),
@@ -267,7 +268,7 @@ class _ConnectPageState extends State<ConnectPage> {
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontFamily: 'brandontext',
                 ),
               ),
             ),
@@ -292,10 +293,10 @@ class _ConnectPageState extends State<ConnectPage> {
       String deviceName = bluetoothProvider.connectedDevice!.platformName;
       print('🔌 $deviceName cihazından bağlantı kesiliyor');
 
-      
+
       await _bluetoothService.disconnect();
 
-      
+
       bluetoothProvider.disconnect();
       _showSnackbar('🔌 $deviceName bağlantısı kesildi', SnackbarType.info);
       setState(() => _selectedDevice = null);
@@ -369,21 +370,25 @@ class _ConnectPageState extends State<ConnectPage> {
     }
   }
 
+  // ✅ DEĞİŞİKLİK: Seri bağlantı kontrolü eklendi
   Color _getButtonColor(BluetoothProvider bluetoothProvider) {
     if (_bluetoothService.bluetoothState != blue_plus.BluetoothAdapterState.on) return Colors.grey;
     if (bluetoothProvider.isConnecting) return Colors.orange;
-    if (bluetoothProvider.connectedDevice != null) return Colors.red;
+    // Hem Bluetooth hem seri bağlantı varsa kırmızı
+    if (bluetoothProvider.connectedDevice != null && _bluetoothService.isConnected) return Colors.red;
     if (_selectedDevice != null) return Color(0xFF00D2C8);
     return Colors.grey;
   }
 
+  // ✅ DEĞİŞİKLİK: Buton metni kontrolü güncellendi
   String _getButtonText(
       BluetoothProvider bluetoothProvider,
       LanguageProvider languageProvider,
       ) {
     if (bluetoothProvider.isConnecting) {
       return 'BAĞLANILIYOR...';
-    } else if (bluetoothProvider.connectedDevice != null) {
+    } else if (bluetoothProvider.connectedDevice != null && _bluetoothService.isConnected) {
+      // Hem Bluetooth hem seri bağlantı varsa "Bağlantıyı Kes"
       return languageProvider.getTranslation('disconnect');
     } else if (_selectedDevice != null) {
       return languageProvider.getTranslation('connect');
@@ -395,7 +400,7 @@ class _ConnectPageState extends State<ConnectPage> {
   IconData _getButtonIcon(BluetoothProvider bluetoothProvider) {
     if (bluetoothProvider.isConnecting) {
       return Icons.hourglass_empty;
-    } else if (bluetoothProvider.connectedDevice != null) {
+    } else if (bluetoothProvider.connectedDevice != null && _bluetoothService.isConnected) {
       return Icons.link_off;
     } else {
       return Icons.bluetooth;
@@ -421,19 +426,19 @@ class _ConnectPageState extends State<ConnectPage> {
                   child: ImageWidget(activePage: "connect"),
                 ),
 
-                
+
                 _buildBluetoothStatusBar(),
 
-                
+
                 _buildConnectionStatusBar(),
 
-                
+
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       children: [
-                        
+
                         Expanded(
                           flex: 1,
                           child: _buildPairedDevicesSection(
@@ -443,7 +448,7 @@ class _ConnectPageState extends State<ConnectPage> {
                         ),
                         SizedBox(height: 16),
 
-                        
+
                         Expanded(
                           flex: 1,
                           child: _buildNearbyDevicesSection(
@@ -456,7 +461,7 @@ class _ConnectPageState extends State<ConnectPage> {
                   ),
                 ),
 
-                
+
                 Consumer<BluetoothProvider>(
                   builder: (context, provider, _) {
                     if (provider.isConnecting) {
@@ -481,8 +486,8 @@ class _ConnectPageState extends State<ConnectPage> {
                               'Bağlanılıyor...',
                               style: TextStyle(
                                 color: Colors.orange,
-                                fontWeight: FontWeight.bold,
                                 fontSize: 14,
+                                fontFamily: 'brandontext',
                               ),
                             ),
                           ],
@@ -493,6 +498,7 @@ class _ConnectPageState extends State<ConnectPage> {
                   },
                 ),
 
+                // ✅ DEĞİŞİKLİK: Buton mantığı güncellendi
                 Container(
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   width: double.infinity,
@@ -501,7 +507,8 @@ class _ConnectPageState extends State<ConnectPage> {
                     _bluetoothService.bluetoothState != blue_plus.BluetoothAdapterState.on
                         ? null
                         : () async {
-                      if (bluetoothProvider.connectedDevice != null) {
+                      // Hem Bluetooth hem seri bağlantı varsa bağlantıyı kes
+                      if (bluetoothProvider.connectedDevice != null && _bluetoothService.isConnected) {
                         _showDisconnectConfirmDialog();
                       } else if (_selectedDevice != null &&
                           !bluetoothProvider.isConnecting) {
@@ -520,8 +527,8 @@ class _ConnectPageState extends State<ConnectPage> {
                         _getButtonText(bluetoothProvider, languageProvider),
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          fontFamily: 'brandontext',
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -559,7 +566,7 @@ class _ConnectPageState extends State<ConnectPage> {
                 SizedBox(width: 8),
                 Text(
                   'Bluetooth kapalı - Lütfen açın',
-                  style: TextStyle(color: Colors.red, fontSize: 12),
+                  style: TextStyle(color: Colors.red, fontSize: 12, fontFamily: 'brandontext'),
                 ),
               ],
             ),
@@ -601,7 +608,7 @@ class _ConnectPageState extends State<ConnectPage> {
                               style: TextStyle(
                                 color: Colors.black87,
                                 fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'brandontext',
                               ),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -622,7 +629,7 @@ class _ConnectPageState extends State<ConnectPage> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'brandontext',
                               ),
                             ),
                           ),
@@ -634,6 +641,7 @@ class _ConnectPageState extends State<ConnectPage> {
                         style: TextStyle(
                           color: Colors.green[700],
                           fontSize: 11,
+                          fontFamily: 'brandontext',
                         ),
                       ),
                     ],
@@ -700,14 +708,15 @@ class _ConnectPageState extends State<ConnectPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Bağlantıyı Kessin mi?',),
+        title: Text('Bağlantıyı Kessin mi?', style: TextStyle(fontFamily: 'brandontext')),
         content: Text(
           '$deviceName ile olan bağlantıyı kesmek istiyor musunuz?',
+          style: TextStyle(fontFamily: 'brandontext'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('İptal'),
+            child: Text('İptal', style: TextStyle(fontFamily: 'brandontext')),
           ),
           TextButton(
             onPressed: () {
@@ -716,7 +725,7 @@ class _ConnectPageState extends State<ConnectPage> {
             },
             child: Text(
               'Bağlantıyı Kes',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: Colors.red, fontFamily: 'brandontext'),
             ),
           ),
         ],
@@ -777,7 +786,7 @@ class _ConnectPageState extends State<ConnectPage> {
                           style: TextStyle(
                             color: headerTextColor,
                             fontSize: isTablet ? 16 : 14,
-                            fontWeight: FontWeight.bold,
+                            fontFamily: 'brandontext',
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
@@ -842,6 +851,7 @@ class _ConnectPageState extends State<ConnectPage> {
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: isTablet ? 14 : 12,
+                        fontFamily: 'brandontext',
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -917,8 +927,8 @@ class _ConnectPageState extends State<ConnectPage> {
                                     _bluetoothService.getDeviceDisplayName(device),
                                     style: TextStyle(
                                       fontSize: isTablet ? 16 : 14,
-                                      fontWeight: FontWeight.bold,
                                       color: Colors.black87,
+                                      fontFamily: 'brandontext',
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -945,7 +955,6 @@ class _ConnectPageState extends State<ConnectPage> {
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
-                                    fontWeight: FontWeight.bold,
                                     fontFamily: 'brandontext',
                                   ),
                                 ),

@@ -141,7 +141,7 @@ class _ManagementState extends State<Management> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(Provider.of<LanguageProvider>(context, listen: false).getTranslation('data_load_error') + ': ${e.toString()}'),
+            content: Text(Provider.of<LanguageProvider>(context, listen: false).getTranslation('data_load_error') + ': ${e.toString()}', style: TextStyle(fontFamily: 'brandontext')),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
@@ -164,18 +164,18 @@ class _ManagementState extends State<Management> {
           SizedBox(height: 16),
           Text(
             languageProvider.getTranslation('data_load_error'),
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'brandontext'),
           ),
           SizedBox(height: 8),
           Text(
             _errorMessage,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600], fontFamily: 'brandontext'),
           ),
           SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadSharedData,
-            child: Text(languageProvider.getTranslation('retry_button')),
+            child: Text(languageProvider.getTranslation('retry_button'), style: TextStyle(fontFamily: 'brandontext')),
           ),
         ],
       ),
@@ -349,8 +349,10 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             enabled: !isLoading,
                             decoration: InputDecoration(
                               labelText: languageProvider.getTranslation('department_label'),
+                              labelStyle: TextStyle(fontFamily: 'brandontext'),
                               border: OutlineInputBorder(),
                             ),
+                            style: TextStyle(fontFamily: 'brandontext'),
                             onChanged: (v) => department = v,
                           ),
                           SizedBox(height: 20),
@@ -358,8 +360,10 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             enabled: !isLoading,
                             decoration: InputDecoration(
                               labelText: languageProvider.getTranslation('fullname_label'),
+                              labelStyle: TextStyle(fontFamily: 'brandontext'),
                               border: OutlineInputBorder(),
                             ),
+                            style: TextStyle(fontFamily: 'brandontext'),
                             onChanged: (v) => name = v,
                           ),
                           SizedBox(height: 20),
@@ -371,8 +375,10 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             inputFormatters: [TimeTextInputFormatter()],
                             decoration: InputDecoration(
                               labelText: languageProvider.getTranslation('time_placeholder'),
+                              labelStyle: TextStyle(fontFamily: 'brandontext'),
                               border: OutlineInputBorder(),
                             ),
+                            style: TextStyle(fontFamily: 'brandontext'),
                             onChanged: (value) {
                               time = value;
                             },
@@ -382,7 +388,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(languageProvider.getTranslation('active_status_label'), style: TextStyle(fontSize: 16)),
+                              Text(languageProvider.getTranslation('active_status_label'), style: TextStyle(fontSize: 16, fontFamily: 'brandontext')),
                               GestureDetector(
                                 onTap: () {
                                   setDialogState(() {
@@ -418,7 +424,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(languageProvider.getTranslation('active_button_label'), style: TextStyle(fontSize: 16)),
+                              Text(languageProvider.getTranslation('active_button_label'), style: TextStyle(fontSize: 16, fontFamily: 'brandontext')),
                               GestureDetector(
                                 onTap: () {
                                   setDialogState(() {
@@ -458,7 +464,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                                 children: [
                                   CircularProgressIndicator(),
                                   SizedBox(width: 16),
-                                  Text(languageProvider.getTranslation('sending_bluetooth')),
+                                  Text(languageProvider.getTranslation('sending_bluetooth'), style: TextStyle(fontFamily: 'brandontext')),
                                 ],
                               ),
                             ),
@@ -472,7 +478,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             : () {
                           Navigator.of(context).pop();
                         },
-                        child: Text(languageProvider.getTranslation('cancel_button')),
+                        child: Text(languageProvider.getTranslation('cancel_button'), style: TextStyle(fontFamily: 'brandontext')),
                       ),
                       ElevatedButton(
                         onPressed: isLoading
@@ -481,7 +487,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           if (department.isEmpty || name.isEmpty || time.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(languageProvider.getTranslation('fill_all_fields')),
+                                content: Text(languageProvider.getTranslation('fill_all_fields'), style: TextStyle(fontFamily: 'brandontext')),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -503,20 +509,20 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(languageProvider.getTranslation('speaker_added_success')),
+                                content: Text(languageProvider.getTranslation('speaker_added_success'), style: TextStyle(fontFamily: 'brandontext')),
                                 backgroundColor: Colors.green,
                               ),
                             );
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(languageProvider.getTranslation('error') + ': $e'),
+                                content: Text(languageProvider.getTranslation('error') + ': $e', style: TextStyle(fontFamily: 'brandontext')),
                                 backgroundColor: Colors.red,
                               ),
                             );
                           }
                         },
-                        child: Text(languageProvider.getTranslation('add_button')),
+                        child: Text(languageProvider.getTranslation('add_button'), style: TextStyle(fontFamily: 'brandontext')),
                       ),
                     ],
                   ),
@@ -546,7 +552,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
 
     if (department.trim().isEmpty || name.trim().isEmpty || time.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(languageProvider.getTranslation('fill_all_fields')),
+        content: Text(languageProvider.getTranslation('fill_all_fields'), style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -555,7 +561,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
 
     if (time.replaceAll(':', '').length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(languageProvider.getTranslation('invalid_time_format')),
+        content: Text(languageProvider.getTranslation('invalid_time_format'), style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -563,7 +569,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(languageProvider.getTranslation('speaker_updated_success')),
+      content: Text(languageProvider.getTranslation('speaker_updated_success'), style: TextStyle(fontFamily: 'brandontext')),
       backgroundColor: Colors.green,
       duration: const Duration(seconds: 2),
     ));
@@ -620,8 +626,8 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 13 : 10,
-              vertical: isTablet ? 8 : 6,
+              horizontal: isTablet ? 4 : 2,
+              vertical: isTablet ? 3 : 1,
             ),
             child: Row(
               children: [
@@ -640,10 +646,11 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                 Text(
                   languageProvider.getTranslation('name_screen_header'),
                   style: TextStyle(
-                    fontSize: isTablet ? 20 : 16,
+                    fontSize: isTablet ? 16 : 12,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF1D7269),
                     height: 0.7,
+                    fontFamily: 'brandontext',
                   ),
                 ),
                 const Spacer(),
@@ -672,6 +679,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             fontWeight: FontWeight.w400,
                             color: const Color(0xFF0D7066),
                             height: 0.92,
+                            fontFamily: 'brandontext',
                           ),
                         ),
                         SizedBox(width: isTablet ? 6 : 4),
@@ -710,6 +718,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                   style: TextStyle(
                     fontSize: isTablet ? 16 : 14,
                     color: Colors.grey[600],
+                    fontFamily: 'brandontext',
                   ),
                 ),
               ),
@@ -843,7 +852,7 @@ class _ContentManagementState extends State<ContentManagement> {
             children: [
               /*ListTile(
                 leading: const Icon(Icons.photo, size: 22),
-                title: Text(languageProvider.getTranslation('select_photo'), style: TextStyle(fontSize: 14)),
+                title: Text(languageProvider.getTranslation('select_photo'), style: TextStyle(fontSize: 14, fontFamily: 'brandontext')),
                 onTap: () async {
                   Navigator.pop(context);
                   final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -858,7 +867,7 @@ class _ContentManagementState extends State<ContentManagement> {
               ),*/
               ListTile(
                 leading: const Icon(Icons.videocam, size: 22),
-                title: Text(languageProvider.getTranslation('select_video'), style: TextStyle(fontSize: 14)),
+                title: Text(languageProvider.getTranslation('select_video'), style: TextStyle(fontSize: 14, fontFamily: 'brandontext')),
                 onTap: () async {
                   Navigator.pop(context);
                   final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
@@ -927,7 +936,7 @@ class _ContentManagementState extends State<ContentManagement> {
                     Expanded(
                       child: Text(
                         languageProvider.getTranslation('video_sending_title'),
-                        style: TextStyle(fontSize: 18),
+                        style: TextStyle(fontSize: 18, fontFamily: 'brandontext'),
                       ),
                     ),
                   ],
@@ -940,6 +949,7 @@ class _ContentManagementState extends State<ContentManagement> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
+                        fontFamily: 'brandontext',
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -951,6 +961,7 @@ class _ContentManagementState extends State<ContentManagement> {
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
+                        fontFamily: 'brandontext',
                       ),
                     ),
                     SizedBox(height: 24),
@@ -974,6 +985,7 @@ class _ContentManagementState extends State<ContentManagement> {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF196E64),
+                        fontFamily: 'brandontext',
                       ),
                     ),
 
@@ -991,6 +1003,7 @@ class _ContentManagementState extends State<ContentManagement> {
                               style: TextStyle(
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold,
+                                fontFamily: 'brandontext',
                               ),
                             ),
                           ],
@@ -1010,6 +1023,7 @@ class _ContentManagementState extends State<ContentManagement> {
                               style: TextStyle(
                                 color: Colors.red,
                                 fontWeight: FontWeight.bold,
+                                fontFamily: 'brandontext',
                               ),
                             ),
                           ],
@@ -1031,7 +1045,7 @@ class _ContentManagementState extends State<ContentManagement> {
                         if (mounted) {
                           ScaffoldMessenger.of(this.context).showSnackBar(
                             SnackBar(
-                              content: Text(languageProvider.getTranslation('video_upload_cancelled')),
+                              content: Text(languageProvider.getTranslation('video_upload_cancelled'), style: TextStyle(fontFamily: 'brandontext')),
                               backgroundColor: Colors.orange,
                             ),
                           );
@@ -1039,7 +1053,7 @@ class _ContentManagementState extends State<ContentManagement> {
                       },
                       child: Text(
                         languageProvider.getTranslation('cancel_button'),
-                        style: TextStyle(color: Colors.red),
+                        style: TextStyle(color: Colors.red, fontFamily: 'brandontext'),
                       ),
                     ),
 
@@ -1053,7 +1067,7 @@ class _ContentManagementState extends State<ContentManagement> {
                       ),
                       child: Text(
                         languageProvider.getTranslation('ok_button'),
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white, fontFamily: 'brandontext'),
                       ),
                     ),
                 ],
@@ -1103,7 +1117,7 @@ class _ContentManagementState extends State<ContentManagement> {
         if (serverVideoPath != null && serverVideoPath.isNotEmpty) {
           ScaffoldMessenger.of(this.context).showSnackBar(
             SnackBar(
-              content: Text('Video yolu alındı: $serverVideoPath'),
+              content: Text('Video yolu alındı: $serverVideoPath', style: TextStyle(fontFamily: 'brandontext')),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 2),
             ),
@@ -1120,7 +1134,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(
-            content: Text(languageProvider.getTranslation('video_send_error') + ': $e'),
+            content: Text(languageProvider.getTranslation('video_send_error') + ': $e', style: TextStyle(fontFamily: 'brandontext')),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 4),
           ),
@@ -1134,7 +1148,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
     if (title.trim().isEmpty || startTime.trim().isEmpty || endTime.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(languageProvider.getTranslation('fill_all_fields')),
+        content: Text(languageProvider.getTranslation('fill_all_fields'), style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -1145,7 +1159,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
     if (!timeRegex.hasMatch(startTime) || !timeRegex.hasMatch(endTime)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(languageProvider.getTranslation('invalid_time_format')),
+        content: Text(languageProvider.getTranslation('invalid_time_format'), style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -1159,7 +1173,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
       if (videoPath == null || videoPath.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(languageProvider.getTranslation('video_path_not_found')),
+          content: Text(languageProvider.getTranslation('video_path_not_found'), style: TextStyle(fontFamily: 'brandontext')),
           backgroundColor: Colors.orange,
           duration: const Duration(seconds: 3),
         ));
@@ -1179,7 +1193,7 @@ class _ContentManagementState extends State<ContentManagement> {
       );
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(languageProvider.getTranslation('content_added_success')),
+        content: Text(languageProvider.getTranslation('content_added_success'), style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
       ));
@@ -1200,7 +1214,7 @@ class _ContentManagementState extends State<ContentManagement> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${languageProvider.getTranslation('error')}: ${e.toString()}'),
+        content: Text('${languageProvider.getTranslation('error')}: ${e.toString()}', style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
       ));
@@ -1233,7 +1247,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
     if (_contents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(languageProvider.getTranslation('export_no_content')),
+        content: Text(languageProvider.getTranslation('export_no_content'), style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.orange,
         duration: const Duration(seconds: 2),
       ));
@@ -1296,17 +1310,17 @@ class _ContentManagementState extends State<ContentManagement> {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 13 : 10,
-              vertical: isTablet ? 10 : 8,
+              horizontal: isTablet ? 4 : 2,
+              vertical: isTablet ? 3 : 1,
             ),
             child: Row(
               children: [
                 Container(
-                  width: isTablet ? 64 : 48,
-                  height: isTablet ? 24 : 18,
+                  width: isTablet ? 70 : 52,
+                  height: isTablet ? 30 : 22,
                   child: Center(
                     child: Image.asset(
-                      'assets/images/logo2.png',
+                      'assets/images/3car.png',
                       width: isTablet ? 28 : 32,
                       height: isTablet ? 18 : 14,
                       fit: BoxFit.contain,
@@ -1316,15 +1330,16 @@ class _ContentManagementState extends State<ContentManagement> {
                 Text(
                   languageProvider.getTranslation('info_screen_header'),
                   style: TextStyle(
-                    fontSize: isTablet ? 20 : 16,
+                    fontSize: isTablet ? 16 : 12,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF1D7269),
                     height: 0.7,
+                    fontFamily: 'brandontext',
                   ),
                 ),
                 const Spacer(),
                 if (screenWidth > 400)
-                  /*GestureDetector(
+                /*GestureDetector(
                     onTap: _exportToComputer,
                     child: Container(
                       padding: EdgeInsets.symmetric(
@@ -1351,6 +1366,7 @@ class _ContentManagementState extends State<ContentManagement> {
                                 fontWeight: FontWeight.w400,
                                 color: const Color(0xFF0D7066),
                                 height: 0.92,
+                                fontFamily: 'brandontext',
                               ),
                             ),
                           if (screenWidth > 500) SizedBox(width: isTablet ? 6 : 4),
@@ -1363,48 +1379,49 @@ class _ContentManagementState extends State<ContentManagement> {
                       ),
                     ),
                   ),*/
-                GestureDetector(
-                  onTap: _addNewContent,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 5 : 4,
-                      vertical: isTablet ? 4 : 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: const Color(0xFF469088),
-                        width: 1,
+                  GestureDetector(
+                    onTap: _addNewContent,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 5 : 4,
+                        vertical: isTablet ? 4 : 3,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (screenWidth > 400)
-                          Text(
-                            languageProvider.getTranslation('add_content_btn'),
-                            style: TextStyle(
-                              fontSize: isTablet ? 13.5 : 11,
-                              fontWeight: FontWeight.w400,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: const Color(0xFF469088),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (screenWidth > 400)
+                            Text(
+                              languageProvider.getTranslation('add_content_btn'),
+                              style: TextStyle(
+                                fontSize: isTablet ? 13.5 : 11,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF0D7066),
+                                height: 0.92,
+                                fontFamily: 'brandontext',
+                              ),
+                            ),
+                          if (screenWidth > 400) SizedBox(width: isTablet ? 6 : 4),
+                          Container(
+                            width: isTablet ? 16 : 13,
+                            height: isTablet ? 16 : 13,
+                            child: Image.asset(
+                              'assets/images/icerikbuton.png',
                               color: const Color(0xFF0D7066),
-                              height: 0.92,
+                              fit: BoxFit.contain,
                             ),
                           ),
-                        if (screenWidth > 400) SizedBox(width: isTablet ? 6 : 4),
-                        Container(
-                          width: isTablet ? 16 : 13,
-                          height: isTablet ? 16 : 13,
-                          child: Image.asset(
-                            'assets/images/icerikbuton.png',
-                            color: const Color(0xFF0D7066),
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -1427,6 +1444,7 @@ class _ContentManagementState extends State<ContentManagement> {
                   style: TextStyle(
                     fontSize: isTablet ? 16 : 14,
                     color: Colors.grey[600],
+                    fontFamily: 'brandontext',
                   ),
                 ),
               ),
@@ -1678,6 +1696,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                           ? const Color(0xFF414A5D)
                           : const Color(0xFFA24D00),
                       height: 0.94,
+                      fontFamily: 'brandontext',
                     ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -1694,6 +1713,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                           ? const Color(0xFF414A5D)
                           : const Color(0xFFA24D00),
                       height: 0.94,
+                      fontFamily: 'brandontext',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1716,6 +1736,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                           ? const Color(0xFF414A5D)
                           : const Color(0xFFA24D00),
                       height: 0.94,
+                      fontFamily: 'brandontext',
                     ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -1732,6 +1753,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                           ? const Color(0xFF414A5D)
                           : const Color(0xFFA24D00),
                       height: 0.94,
+                      fontFamily: 'brandontext',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1873,6 +1895,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
           color: const Color(0xFF1D1D1D),
           height: 1.037037037037037,
           backgroundColor: Colors.white,
+          fontFamily: 'brandontext',
         ),
       ),
     );
@@ -2151,6 +2174,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                     fontSize: widget.isTablet ? 14 : 12,
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
+                    fontFamily: 'brandontext',
                   ),
                 ),
               ],
@@ -2272,6 +2296,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                                 ? const Color(0xFF414A5D)
                                 : const Color(0xFFA24D00),
                             height: 0.94,
+                            fontFamily: 'brandontext',
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
@@ -2288,6 +2313,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                                 ? const Color(0xFF414A5D)
                                 : const Color(0xFFA24D00),
                             height: 0.94,
+                            fontFamily: 'brandontext',
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -2320,6 +2346,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                           color: borderColor == const Color(0xFF5E6676)
                               ? const Color(0xFF3B4458)
                               : const Color(0xFFA24D00),
+                          fontFamily: 'brandontext',
                         ),
                       ),
                       SizedBox(width: widget.isTablet ? 8.0 : 6.0),
@@ -2465,6 +2492,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
           color: const Color(0xFF1D1D1D),
           height: 1.037037037037037,
           backgroundColor: Colors.white,
+          fontFamily: 'brandontext',
         ),
       ),
     );
@@ -2501,6 +2529,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                       fontSize: widget.isTablet ? 12 : 10,
                       fontWeight: FontWeight.w500,
                       color: Colors.white,
+                      fontFamily: 'brandontext',
                     ),
                   ),
                 ),
@@ -2527,6 +2556,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                       fontSize: widget.isTablet ? 12 : 10,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF1D1D1D),
+                      fontFamily: 'brandontext',
                     ),
                   ),
                 ),

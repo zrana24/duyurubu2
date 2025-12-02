@@ -948,7 +948,6 @@ class BluetoothService {
 
             if (response.containsKey('path')) {
               String? path = response['path'];
-              print('🎉 PATH ALINDI: $path');
 
               _dataSubscription?.cancel();
               _dataSubscription = null;
