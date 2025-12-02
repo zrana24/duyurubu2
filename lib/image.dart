@@ -174,7 +174,7 @@ class _ImageWidgetState extends State<ImageWidget> {
           return;
         }
         onTap();
-      }, // BU PARANTEZ VE VIRGÜL EKSİKTİ
+      },
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: AnimatedContainer(
@@ -262,7 +262,7 @@ class _ImageWidgetState extends State<ImageWidget> {
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.5,
-                  fontFamily: 'Roboto',
+                  fontFamily: 'brandontext',
                 ),
               ),
             ],

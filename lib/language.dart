@@ -509,14 +509,8 @@ class LanguagePage extends StatelessWidget {
         width: isTablet ? screenWidth * 0.65 : screenWidth * 0.8,
         height: isTablet ? screenHeight * 0.1 : screenHeight * 0.085,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? const Color(0xFF4DB6AC) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? Colors.black
-                : const Color(0xFFC5CAE9),
-            width: isSelected ? 3 : 2,
-          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -537,7 +531,6 @@ class LanguagePage extends StatelessWidget {
                   height: isTablet ? 24 : 20,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-
                     return Container(
                       width: isTablet ? 32 : 28,
                       height: isTablet ? 24 : 20,
@@ -550,7 +543,6 @@ class LanguagePage extends StatelessWidget {
                           lang['code']!.toUpperCase(),
                           style: TextStyle(
                             fontSize: isTablet ? 12 : 10,
-                            fontWeight: FontWeight.bold,
                             color: Colors.grey[600],
                             fontFamily: 'brandontext',
                           ),
@@ -576,8 +568,7 @@ class LanguagePage extends StatelessWidget {
                       lang['name']!,
                       style: TextStyle(
                         fontSize: isTablet ? 16 : screenWidth * 0.038,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF37474F),
+                        color: isSelected ? Colors.white : const Color(0xFF37474F),
                         fontFamily: 'brandontext',
                       ),
                       maxLines: 2,

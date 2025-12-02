@@ -8,6 +8,7 @@ import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart' as bluet
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:core';
 import 'dart:math' as math;
+import 'management.dart';
 
 enum BluetoothServiceState {
   disconnected,
@@ -351,7 +352,6 @@ class BluetoothService {
           await Future.delayed(Duration(milliseconds: 1000));
         }
 
-
         final adapterState = await blue_plus.FlutterBluePlus.adapterState.first;
         if (adapterState != blue_plus.BluetoothAdapterState.on) {
           throw Exception('Bluetooth adaptörü kapalı');
@@ -482,9 +482,11 @@ class BluetoothService {
 
   Timer? _connectionMonitorTimer;
 
+  Function(BuildContext)? onSerialConnected;
+
   Future<void> connectToCsServer(String address) async {
     if (_isConnectionActive && _connection != null && _connection!.isConnected) {
-      print('✅ Serial bağlantı zaten aktif');
+      _sendNotification('Bağlantı aktif ', 'info');
       return;
     }
 
@@ -511,7 +513,13 @@ class BluetoothService {
 
       await Future.delayed(Duration(milliseconds: 500));
 
-    } catch (e) {
+      _notificationController.add({
+        'message': 'navigate_to_management',
+        'type': 'navigation',
+        'timestamp': DateTime.now(),
+      });
+    }
+    catch (e) {
       print('❌ Serial bağlantı hatası: $e');
       _isConnectionActive = false;
       _connection = null;
@@ -523,16 +531,26 @@ class BluetoothService {
   void _startConnectionMonitoring() {
     _connectionMonitorTimer?.cancel();
 
-    _connectionMonitorTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+    _connectionMonitorTimer = Timer.periodic(Duration(seconds: 5), (timer) async {
       if (_connection != null && !_connection!.isConnected) {
-        _sendNotification('🔌 Seri bağlantı koptu', 'warning');
-        timer.cancel();
-        _handleDisconnection();
+        print('🔌 Seri bağlantı koptu, yeniden bağlanılıyor...');
+        _sendNotification('🔌 Seri bağlantı koptu, yeniden bağlanılıyor...', 'warning');
+
+        if (connectedDeviceMacAddress != null) {
+          try {
+            await connectToCsServer(connectedDeviceMacAddress!);
+            _sendNotification('✅ Seri bağlantı yeniden kuruldu', 'success');
+          }
+          catch (e) {
+            print('❌ Yeniden bağlantı hatası: $e');
+            _sendNotification('❌ Seri bağlantı yeniden kurulamadı', 'error');
+          }
+        }
         return;
       }
 
       if (_connectedDevice != null) {
-        _connectedDevice!.connectionState.first.then((state) {
+        _connectedDevice!.connectionState.first.then((state) async {
           if (state == blue_plus.BluetoothConnectionState.disconnected) {
             print('⚠️ Bluetooth bağlantı kopmuş tespit edildi!');
             String deviceName = getDeviceDisplayName(_connectedDevice!);
@@ -544,7 +562,6 @@ class BluetoothService {
       }
     });
   }
-
 
   Future<void> _closeSerialConnection() async {
     try {
@@ -985,11 +1002,10 @@ class BluetoothService {
         },
       );
 
-      print("✔✔✔ SON PATH: $receivedVideoPath");
       print("📊 ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB - Süre: ${totalTime.inSeconds}s - Ort. Hız: ${avgSpeed.toStringAsFixed(2)} MB/s");
 
       if (receivedVideoPath != null) {
-        _sendNotification('✅ Video başarıyla gönderildi: $name', 'success');
+        _sendNotification('✅ Video başarıyla gönderildi', 'success');
         print("✅ Video path başarıyla alındı: $receivedVideoPath");
         return receivedVideoPath;
       }
@@ -1095,7 +1111,7 @@ class BluetoothService {
           if (!completer.isCompleted) completer.completeError(e);
         },
         onDone: () {
-          print("📭 Stream bitti");
+          print("Stream bitti");
           if (!completer.isCompleted) {
             if (allBytes.isNotEmpty) {
               completer.complete(utf8.decode(allBytes).trim());

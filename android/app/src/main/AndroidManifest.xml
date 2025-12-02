@@ -1,24 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Eski cihazlar için -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
-    <!-- Android 12+ için gerekli izinler -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
 
-    <!-- runtime location izinleri (Android 11 ve öncesi için tarama şart) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Bluetooth özellik bildirimi -->
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
 
     <application
-        android:label="duyurubu2"
+        android:label="duyurubu"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -49,7 +45,6 @@
 
     </application>
 
-    <!-- Flutterın ProcessText özelliği -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />

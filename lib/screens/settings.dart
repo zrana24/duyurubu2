@@ -322,7 +322,7 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF1D7269), width: 2),
+        border: Border.all(color: const Color(0xFF1D7269), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -435,7 +435,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                   width: containerWidth * brightnessValue,
                                                   height: double.infinity,
                                                   decoration: BoxDecoration(
-                                                    color: Colors.grey[600],
+                                                      color: const Color(0xFF6D8094),
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                 ),
@@ -559,7 +559,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                     width: containerWidth * volumeValue,
                                                     height: double.infinity,
                                                     decoration: BoxDecoration(
-                                                      color: Colors.grey[600],
+                                                      color:const Color(0xFF6D8094),
                                                       borderRadius: BorderRadius.circular(8),
                                                     ),
                                                   ),

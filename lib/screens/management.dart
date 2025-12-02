@@ -590,14 +590,8 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       _speakers.removeAt(index);
       final parentState = context.findAncestorStateOfType<_ManagementState>();
       parentState?._loadSharedData();
-      print("ben çalıştım amca");
     });
 
-  }
-
-  Color _getCardColor(int index) {
-    List<Color> colors = [const Color(0xFF4CAF50), const Color(0xFFFF9800)];
-    return colors[index % colors.length];
   }
 
   Widget build(BuildContext context) {
@@ -653,13 +647,13 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                     fontFamily: 'brandontext',
                   ),
                 ),
-                const Spacer(),
+                SizedBox(width: isTablet ? 190 : 180),
                 GestureDetector(
                   onTap: _addNewSpeaker,
                   child: Container(
+                    height: isTablet ? 28 : 24,
                     padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 5 : 4,
-                      vertical: isTablet ? 4 : 3,
+                      horizontal: isTablet ? 12 : 8,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
@@ -678,7 +672,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             fontSize: isTablet ? 13.5 : 11,
                             fontWeight: FontWeight.w400,
                             color: const Color(0xFF0D7066),
-                            height: 0.92,
+                            height: 1.2,
                             fontFamily: 'brandontext',
                           ),
                         ),
@@ -836,6 +830,16 @@ class _ContentManagementState extends State<ContentManagement> {
         'videoPath': null,
       });
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(Duration(milliseconds: 100), () {
+        Scrollable.ensureVisible(
+          context,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      });
+    });
   }
 
   Future<void> _pickFile(int index) async {
@@ -850,21 +854,6 @@ class _ContentManagementState extends State<ContentManagement> {
         return SafeArea(
           child: Wrap(
             children: [
-              /*ListTile(
-                leading: const Icon(Icons.photo, size: 22),
-                title: Text(languageProvider.getTranslation('select_photo'), style: TextStyle(fontSize: 14, fontFamily: 'brandontext')),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                  if (image != null) {
-                    setState(() {
-                      _contents[index]['file'] = File(image.path);
-                      _contents[index]['type'] = 'photo';
-                      _contents[index]['videoPath'] = image.path;
-                    });
-                  }
-                },
-              ),*/
               ListTile(
                 leading: const Icon(Icons.videocam, size: 22),
                 title: Text(languageProvider.getTranslation('select_video'), style: TextStyle(fontSize: 14, fontFamily: 'brandontext')),
@@ -1242,47 +1231,6 @@ class _ContentManagementState extends State<ContentManagement> {
     }
   }
 
-  /*void _exportToComputer() async {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-
-    if (_contents.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(languageProvider.getTranslation('export_no_content'), style: TextStyle(fontFamily: 'brandontext')),
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 2),
-      ));
-      return;
-    }
-
-    setState(() {
-      _showExportSuccess = true;
-    });
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      _showExportSuccess = false;
-    });
-
-    try {
-      String? outputFile = await FilePicker.platform.saveFile(
-        dialogTitle: languageProvider.getTranslation('export_computer_btn'),
-        fileName: 'toplanti_icerikleri_${DateTime.now().millisecondsSinceEpoch}.json',
-      );
-
-      if (outputFile != null) {
-        final exportData = {
-          'exportDate': DateTime.now().toIso8601String(),
-          'contentCount': _contents.length,
-          'contents': _contents,
-        };
-        print('İçerikler şu konuma kaydedildi: $outputFile');
-      }
-    } catch (e) {
-      print('Aktarma hatası: $e');
-    }
-  }*/
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1310,18 +1258,17 @@ class _ContentManagementState extends State<ContentManagement> {
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 4 : 2,
-              vertical: isTablet ? 3 : 1,
+              horizontal: isTablet ? 6 : 4,
             ),
             child: Row(
               children: [
                 Container(
-                  width: isTablet ? 70 : 52,
-                  height: isTablet ? 30 : 22,
+                  width: isTablet ? 64 : 48,
+                  height: isTablet ? 24 : 18,
                   child: Center(
                     child: Image.asset(
                       'assets/images/3car.png',
-                      width: isTablet ? 28 : 32,
+                      width: isTablet ? 32 : 36,
                       height: isTablet ? 18 : 14,
                       fit: BoxFit.contain,
                     ),
@@ -1337,54 +1284,14 @@ class _ContentManagementState extends State<ContentManagement> {
                     fontFamily: 'brandontext',
                   ),
                 ),
-                const Spacer(),
+                SizedBox(width: isTablet ? 190 : 180),
                 if (screenWidth > 400)
-                /*GestureDetector(
-                    onTap: _exportToComputer,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 5 : 4,
-                        vertical: isTablet ? 4 : 3,
-                      ),
-                      margin: EdgeInsets.only(right: isTablet ? 8 : 6),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: const Color(0xFF469088),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (screenWidth > 500)
-                            Text(
-                              languageProvider.getTranslation('export_computer_btn'),
-                              style: TextStyle(
-                                fontSize: isTablet ? 13.5 : 11,
-                                fontWeight: FontWeight.w400,
-                                color: const Color(0xFF0D7066),
-                                height: 0.92,
-                                fontFamily: 'brandontext',
-                              ),
-                            ),
-                          if (screenWidth > 500) SizedBox(width: isTablet ? 6 : 4),
-                          Icon(
-                            Icons.computer,
-                            size: isTablet ? 16 : 13,
-                            color: const Color(0xFF0D7066),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),*/
                   GestureDetector(
                     onTap: _addNewContent,
                     child: Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: isTablet ? 5 : 4,
-                        vertical: isTablet ? 4 : 3,
+                        vertical: isTablet ? 6 : 5,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.transparent,
@@ -1408,7 +1315,8 @@ class _ContentManagementState extends State<ContentManagement> {
                                 fontFamily: 'brandontext',
                               ),
                             ),
-                          if (screenWidth > 400) SizedBox(width: isTablet ? 6 : 4),
+                          if (screenWidth > 400) SizedBox(width: isTablet ? 8
+                              : 6),
                           Container(
                             width: isTablet ? 16 : 13,
                             height: isTablet ? 16 : 13,
@@ -1672,10 +1580,10 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
       height: widget.isTablet ? 143.0 : 133.0,
       child: Padding(
         padding: EdgeInsets.only(
-          left: widget.isTablet ? 12.0 : 8.0,
-          right: widget.isTablet ? 12.0 : 14.0,
-          top: widget.isTablet ? 18.0 : 16.0,
-          bottom: widget.isTablet ? 14.0 : 12.0,
+          left: widget.isTablet ? 20.0 : 16.0,
+          right: widget.isTablet ? 20.0 : 18.0,
+          top: widget.isTablet ? 24.0 : 20.0,
+          bottom: widget.isTablet ? 20.0 : 16.0,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1721,6 +1629,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                 ),
               ],
             ),
+            SizedBox(height: widget.isTablet ? 3 : 2),
             Row(
               children: [
                 _buildImageIcon('assets/images/konusmaci.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
@@ -1761,6 +1670,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                 ),
               ],
             ),
+            SizedBox(height: widget.isTablet ? 4 : 3),
             Row(
               children: [
                 _buildImageIcon('assets/images/saat.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
@@ -1881,10 +1791,20 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
 
   Widget _buildSpeakerBadgeWithBorder(int number, Color borderColor, LanguageProvider languageProvider) {
     final fontSize = widget.isTablet ? 12.0 : 10.0;
-    final verticalPadding = widget.isTablet ? 3.0 : 2.0;
+    final horizontalPadding = widget.isTablet ? 8.0 : 6.0;
+    final verticalPadding = widget.isTablet ? 4.0 : 3.0;
 
-    return Padding(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.white,
+          width: 1.0,
+        ),
+        borderRadius: BorderRadius.circular(4.0),
+      ),
       padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
         vertical: verticalPadding,
       ),
       child: Text(
@@ -1894,7 +1814,6 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
           fontWeight: FontWeight.w500,
           color: const Color(0xFF1D1D1D),
           height: 1.037037037037037,
-          backgroundColor: Colors.white,
           fontFamily: 'brandontext',
         ),
       ),
@@ -1939,10 +1858,10 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                     ),
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.close,
-                      size: widget.isTablet ? 18 : 16,
-                      color: Colors.red[900],
+                    child: Image.asset(
+                      'assets/images/delete.png',
+                      width: widget.isTablet ? 18 : 16,
+                      height: widget.isTablet ? 18 : 16,
                     ),
                   ),
                 ),
@@ -1971,10 +1890,16 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                     ),
                   ),
                   child: Center(
-                    child: Icon(
-                      _isPlaying ? Icons.pause : Icons.play_arrow,
-                      size: widget.isTablet ? 18 : 16,
-                      color: const Color(0xFF1D1D1D),
+                    child: Image.asset(
+                      _isPlaying
+                          ? 'assets/images/pause.png'
+                          : 'assets/images/play.png',
+                      width: _isPlaying
+                          ? (widget.isTablet ? 16 : 14)
+                          : (widget.isTablet ? 28 : 24),
+                      height: _isPlaying
+                          ? (widget.isTablet ? 16 : 14)
+                          : (widget.isTablet ? 28 : 24),
                     ),
                   ),
                 ),
@@ -2373,6 +2298,48 @@ class _EditableContentCardState extends State<EditableContentCard> {
     );
   }
 
+  Widget _buildToggleSwitch() {
+    return GestureDetector(
+      onTap: _isEditing ? () async {
+        setState(() {
+          _isSwitchActive = !_isSwitchActive;
+        });
+        widget.onToggleChange(_isSwitchActive);
+      } : null,
+      child: Container(
+        width: widget.isTablet ? 30 : 26,
+        height: widget.isTablet ? 14 : 12,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: _isSwitchActive ? const Color(0xFF196E64) : Colors.grey[300],
+          borderRadius: BorderRadius.circular(20),
+          border: _isEditing ? null : Border.all(
+            color: Colors.grey[400]!,
+            width: 0.5,
+          ),
+        ),
+        child: AnimatedAlign(
+          duration: Duration(milliseconds: 200),
+          alignment: _isSwitchActive ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: widget.isTablet ? 10 : 8,
+            height: widget.isTablet ? 10 : 8,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: _isEditing ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ] : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildDigitalTime(String time,
       Color textColor,
@@ -2446,42 +2413,15 @@ class _EditableContentCardState extends State<EditableContentCard> {
     );
   }
 
-  Widget _buildToggleSwitch() {
-    return GestureDetector(
-      onTap: () async {
-
-      },
-      child: Container(
-        width: widget.isTablet ? 30 : 26,
-        height: widget.isTablet ? 14 : 12,
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: _isSwitchActive ? const Color(0xFF196E64) : Colors.grey[300],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: AnimatedAlign(
-          duration: Duration(milliseconds: 200),
-          alignment: _isSwitchActive ? Alignment.centerRight : Alignment
-              .centerLeft,
-          child: Container(
-            width: widget.isTablet ? 10 : 8,
-            height: widget.isTablet ? 10 : 8,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildContentBadgeWithBorder(int number, Color borderColor, LanguageProvider languageProvider) {
     final fontSize = widget.isTablet ? 12.0 : 10.0;
+    final horizontalPadding = widget.isTablet ? 8.0 : 6.0;
     final verticalPadding = widget.isTablet ? 3.0 : 2.0;
 
-    return Padding(
+    return Container(
+      color: Colors.white,
       padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
         vertical: verticalPadding,
       ),
       child: Text(
@@ -2491,7 +2431,6 @@ class _EditableContentCardState extends State<EditableContentCard> {
           fontWeight: FontWeight.w500,
           color: const Color(0xFF1D1D1D),
           height: 1.037037037037037,
-          backgroundColor: Colors.white,
           fontFamily: 'brandontext',
         ),
       ),
@@ -2604,10 +2543,10 @@ class _EditableContentCardState extends State<EditableContentCard> {
                     ),
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.close,
-                      size: widget.isTablet ? 18 : 16,
-                      color: Colors.red[900],
+                    child: Image.asset(
+                      'assets/images/delete.png',
+                      width: widget.isTablet ? 18 : 16,
+                      height: widget.isTablet ? 18 : 16,
                     ),
                   ),
                 ),
@@ -2636,10 +2575,16 @@ class _EditableContentCardState extends State<EditableContentCard> {
                     ),
                   ),
                   child: Center(
-                    child: Icon(
-                      _isPlaying ? Icons.pause : Icons.play_arrow,
-                      size: widget.isTablet ? 18 : 16,
-                      color: const Color(0xFF1D1D1D),
+                    child: Image.asset(
+                      _isPlaying
+                          ? 'assets/images/pause.png'
+                          : 'assets/images/play.png',
+                      width: _isPlaying
+                          ? (widget.isTablet ? 16 : 14)
+                          : (widget.isTablet ? 28 : 24),
+                      height: _isPlaying
+                          ? (widget.isTablet ? 16 : 14)
+                          : (widget.isTablet ? 28 : 24),
                     ),
                   ),
                 ),

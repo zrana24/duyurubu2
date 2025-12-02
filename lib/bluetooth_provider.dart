@@ -94,36 +94,30 @@ class BluetoothProvider with ChangeNotifier {
         try {
           String receivedString = utf8.decode(value);
 
-          // ReadLine benzeri işlem: buffer'a ekle ve satırları ayır
           _readBuffer.write(receivedString);
           String bufferContent = _readBuffer.toString();
 
-          // Satır sonu karakterlerini kontrol et (\n veya \r\n)
           while (bufferContent.contains('\n')) {
             int newlineIndex = bufferContent.indexOf('\n');
             String line = bufferContent.substring(0, newlineIndex);
-            // \r karakterini temizle
+
             line = line.replaceAll('\r', '');
 
             if (line.isNotEmpty) {
-              // Satırı stream'e gönder (ReadLine benzeri)
+
               _lineStreamController.add(line);
 
-              // JSON olarak parse etmeyi dene (mevcut işlevsellik için)
               try {
                 Map<String, dynamic> receivedData = jsonDecode(line);
                 _handleReceivedData(receivedData);
               } catch (e) {
-                // JSON değilse sadece ham satır olarak işle
                 print('📨 Gelen satır: $line');
               }
             }
 
-            // Buffer'dan işlenen kısmı çıkar
             bufferContent = bufferContent.substring(newlineIndex + 1);
           }
 
-          // Buffer'ı güncelle
           _readBuffer.clear();
           _readBuffer.write(bufferContent);
         } catch (e) {
@@ -177,9 +171,6 @@ class BluetoothProvider with ChangeNotifier {
     }
   }
 
-  // VERİ GÖNDERME METODLARI
-
-  /// İsimlik ekleme verisi gönderir
   Future<void> sendIsimlikAdd({
     required String title,
     required String name,
@@ -210,7 +201,6 @@ class BluetoothProvider with ChangeNotifier {
     }
   }
 
-  /// Konuşmacı verisi gönderir
   Future<void> sendSpeakerData(Map<String, dynamic> data) async {
     if (_connectedDevice == null || _writeCharacteristic == null) {
       return;
@@ -226,7 +216,6 @@ class BluetoothProvider with ChangeNotifier {
     }
   }
 
-  /// İçerik verisi gönderir
   Future<void> sendContentData(Map<String, dynamic> data) async {
     if (_connectedDevice == null || _writeCharacteristic == null) {
       return;
@@ -287,7 +276,6 @@ class BluetoothProvider with ChangeNotifier {
     }
   }
 
-  /// Özel JSON verisi gönderir
   Future<void> sendCustomJson(Map<String, dynamic> data) async {
     if (_connectedDevice == null || _writeCharacteristic == null) {
       throw Exception('Bluetooth bağlantısı yok');
@@ -302,20 +290,12 @@ class BluetoothProvider with ChangeNotifier {
       throw e;
     }
   }
-
-  // ============================================
-  // C# Serial Port benzeri metodlar
-  // ============================================
-
-  /// WriteLineAsync benzeri: Satır sonu ile veri gönderir
-  /// C# kodundaki: await writer.WriteLineAsync(textBox1.Text);
   Future<void> writeLine(String message) async {
     if (_connectedDevice == null || _writeCharacteristic == null) {
       throw Exception('Bluetooth bağlantısı yok');
     }
 
     try {
-      // Satır sonu ekle (\r\n - C# StreamWriter ile uyumlu)
       String lineToSend = '$message\r\n';
       List<int> bytes = utf8.encode(lineToSend);
 
@@ -327,7 +307,6 @@ class BluetoothProvider with ChangeNotifier {
     }
   }
 
-  /// WriteAsync benzeri: Satır sonu olmadan veri gönderir
   Future<void> write(String message) async {
     if (_connectedDevice == null || _writeCharacteristic == null) {
       throw Exception('Bluetooth bağlantısı yok');
@@ -343,9 +322,6 @@ class BluetoothProvider with ChangeNotifier {
     }
   }
 
-  /// ReadLine benzeri: Gelen satırları dinler (Stream olarak)
-  /// C# kodundaki: string gelenMesaj = reader.ReadLine();
-  /// Kullanım: bluetoothProvider.readLine().then((line) => print('Gelen: $line'));
   Future<String> readLine({Duration? timeout}) async {
     if (_connectedDevice == null) {
       throw Exception('Bluetooth bağlantısı yok');
@@ -388,11 +364,8 @@ class BluetoothProvider with ChangeNotifier {
     }
   }
 
-  /// ReadLineStream: Gelen satırları sürekli dinler
-  /// C# kodundaki while döngüsü benzeri kullanım için
   Stream<String> get readLineStream => lineStream;
 
-  // Bağlantıyı Kesme
   void disconnect() {
     _connectedDevice = null;
     _isConnecting = false;
@@ -404,14 +377,12 @@ class BluetoothProvider with ChangeNotifier {
     _readSubscription?.cancel();
     _connectionStateSubscription?.cancel();
 
-    // Buffer'ı temizle
     _readBuffer.clear();
 
     print('✅ Bağlantı kesildi');
     notifyListeners();
   }
 
-  // Bağlantı Sırasında Provider Güncelle
   void setConnecting(bool connecting) {
     _isConnecting = connecting;
     if (connecting) {

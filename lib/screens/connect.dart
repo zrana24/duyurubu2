@@ -7,6 +7,7 @@ import '../language.dart';
 import '../image.dart';
 import 'connected.dart';
 import 'dart:async';
+import 'management.dart';
 
 enum SnackbarType { success, error, info }
 
@@ -32,6 +33,18 @@ class _ConnectPageState extends State<ConnectPage> {
 
     _notificationSubscription = _bluetoothService.notificationStream.listen((notification) {
       if (!mounted) return;
+
+      String message = notification['message'];
+      String type = notification['type'];
+
+      if (type == 'navigation' && message == 'navigate_to_management') {
+        print("geldi");
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => Management()),
+        );
+        return;
+      }
+
       _showNotificationSnackbar(notification);
     });
   }
@@ -172,12 +185,9 @@ class _ConnectPageState extends State<ConnectPage> {
       String deviceName = _bluetoothService.getDeviceDisplayName(device);
       print('🔗 $deviceName cihazına bağlanılıyor...');
 
-
       bluetoothProvider.setConnecting(true);
 
-
       await _bluetoothService.connectToDevice(device);
-
 
       bluetoothProvider.setConnectedDevice(device);
       setState(() => _selectedDevice = device);
@@ -189,7 +199,6 @@ class _ConnectPageState extends State<ConnectPage> {
       print('❌ Bağlantı hatası: $deviceName -> $e');
       _showSnackbar('❌ $errorMessage', SnackbarType.error);
       _showConnectionErrorDialog(deviceName, errorMessage);
-
 
       bluetoothProvider.setConnecting(false);
     }
@@ -293,9 +302,7 @@ class _ConnectPageState extends State<ConnectPage> {
       String deviceName = bluetoothProvider.connectedDevice!.platformName;
       print('🔌 $deviceName cihazından bağlantı kesiliyor');
 
-
       await _bluetoothService.disconnect();
-
 
       bluetoothProvider.disconnect();
       _showSnackbar('🔌 $deviceName bağlantısı kesildi', SnackbarType.info);
@@ -304,47 +311,6 @@ class _ConnectPageState extends State<ConnectPage> {
   }
 
   String deviceAddress = "";
-
-  int _getSignalStrength(int? rssi) {
-    if (rssi == null) return 0;
-    if (rssi >= -50) return 4;
-    if (rssi >= -60) return 3;
-    if (rssi >= -70) return 2;
-    if (rssi >= -80) return 1;
-    return 0;
-  }
-
-  Widget _buildSignalIndicator(int? rssi) {
-    int level = _getSignalStrength(rssi);
-    return Row(
-      children: List.generate(4, (index) {
-        return Container(
-          width: 3,
-          height: (index + 1) * 3.0,
-          margin: EdgeInsets.only(right: 1),
-          decoration: BoxDecoration(
-            color: index < level ? _getSignalColor(level) : Colors.grey[300],
-            borderRadius: BorderRadius.circular(1),
-          ),
-        );
-      }),
-    );
-  }
-
-  Color _getSignalColor(int level) {
-    switch (level) {
-      case 4:
-        return Colors.green;
-      case 3:
-        return Colors.lightGreen;
-      case 2:
-        return Colors.orange;
-      case 1:
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
 
   IconData _getDeviceIcon(blue_plus.BluetoothDevice device) {
     String deviceName = _bluetoothService.getDeviceDisplayName(device).toLowerCase();
@@ -370,17 +336,14 @@ class _ConnectPageState extends State<ConnectPage> {
     }
   }
 
-  // ✅ DEĞİŞİKLİK: Seri bağlantı kontrolü eklendi
   Color _getButtonColor(BluetoothProvider bluetoothProvider) {
     if (_bluetoothService.bluetoothState != blue_plus.BluetoothAdapterState.on) return Colors.grey;
     if (bluetoothProvider.isConnecting) return Colors.orange;
-    // Hem Bluetooth hem seri bağlantı varsa kırmızı
     if (bluetoothProvider.connectedDevice != null && _bluetoothService.isConnected) return Colors.red;
     if (_selectedDevice != null) return Color(0xFF00D2C8);
     return Colors.grey;
   }
 
-  // ✅ DEĞİŞİKLİK: Buton metni kontrolü güncellendi
   String _getButtonText(
       BluetoothProvider bluetoothProvider,
       LanguageProvider languageProvider,
@@ -388,7 +351,6 @@ class _ConnectPageState extends State<ConnectPage> {
     if (bluetoothProvider.isConnecting) {
       return 'BAĞLANILIYOR...';
     } else if (bluetoothProvider.connectedDevice != null && _bluetoothService.isConnected) {
-      // Hem Bluetooth hem seri bağlantı varsa "Bağlantıyı Kes"
       return languageProvider.getTranslation('disconnect');
     } else if (_selectedDevice != null) {
       return languageProvider.getTranslation('connect');
@@ -426,19 +388,15 @@ class _ConnectPageState extends State<ConnectPage> {
                   child: ImageWidget(activePage: "connect"),
                 ),
 
-
                 _buildBluetoothStatusBar(),
 
-
                 _buildConnectionStatusBar(),
-
 
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       children: [
-
                         Expanded(
                           flex: 1,
                           child: _buildPairedDevicesSection(
@@ -447,7 +405,6 @@ class _ConnectPageState extends State<ConnectPage> {
                           ),
                         ),
                         SizedBox(height: 16),
-
 
                         Expanded(
                           flex: 1,
@@ -460,7 +417,6 @@ class _ConnectPageState extends State<ConnectPage> {
                     ),
                   ),
                 ),
-
 
                 Consumer<BluetoothProvider>(
                   builder: (context, provider, _) {
@@ -498,7 +454,6 @@ class _ConnectPageState extends State<ConnectPage> {
                   },
                 ),
 
-                // ✅ DEĞİŞİKLİK: Buton mantığı güncellendi
                 Container(
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   width: double.infinity,
@@ -507,7 +462,6 @@ class _ConnectPageState extends State<ConnectPage> {
                     _bluetoothService.bluetoothState != blue_plus.BluetoothAdapterState.on
                         ? null
                         : () async {
-                      // Hem Bluetooth hem seri bağlantı varsa bağlantıyı kes
                       if (bluetoothProvider.connectedDevice != null && _bluetoothService.isConnected) {
                         _showDisconnectConfirmDialog();
                       } else if (_selectedDevice != null &&
@@ -933,8 +887,6 @@ class _ConnectPageState extends State<ConnectPage> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                SizedBox(width: 8),
-                                _buildSignalIndicator(rssi),
                               ],
                             ),
                           ),
