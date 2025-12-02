@@ -454,18 +454,14 @@ class BluetoothService {
 
   Image imageFromBase64(String base64Str) {
     try {
-      // Base64 string'i temizle
       base64Str = base64Str.trim();
 
-      // Data URL formatındaysa (data:image/...), sadece base64 kısmını al
       if (base64Str.contains(',')) {
         base64Str = base64Str.split(',').last;
       }
 
-      // Base64 decode et
       Uint8List bytes = base64Decode(base64Str);
 
-      // Image widget'ını oluştur
       return Image.memory(
         bytes,
         fit: BoxFit.cover,
@@ -511,7 +507,6 @@ class BluetoothService {
           : 'Cihaz';
       _sendNotification('✅ $deviceName ile seri bağlantı kuruldu', 'success');
 
-      // ✅ Bağlantıyı sürekli kontrol et
       _startConnectionMonitoring();
 
       await Future.delayed(Duration(milliseconds: 500));
@@ -751,8 +746,7 @@ class BluetoothService {
   Future<void> delete({
     required int id,
     required String tip,
-  })async{
-
+  }) async {
     Map<String, dynamic> data = {};
 
     if(tip == "isimlik"){
@@ -770,7 +764,11 @@ class BluetoothService {
 
     await sendDataToDevice(connectedDeviceMacAddress!, data);
     print(data);
-    await Future.delayed(Duration(seconds: 3));
+
+    await Future.delayed(Duration(seconds: 5));
+
+    _dataSubscription?.cancel();
+    _dataSubscription = null;
   }
 
   Future<void> isimlikAdd({
@@ -938,7 +936,6 @@ class BluetoothService {
 
       print("\n✅ Video tamamen gönderildi: $name");
 
-      // ✅ Completer'ı String? tipinde tanımlayın
       final completer = Completer<String?>();
 
       _dataSubscription = _connectionInputStream!.listen(
@@ -956,7 +953,6 @@ class BluetoothService {
               _dataSubscription?.cancel();
               _dataSubscription = null;
 
-              // ✅ Path değeriyle tamamlayın
               if (!completer.isCompleted) {
                 completer.complete(path);
               }
@@ -980,7 +976,6 @@ class BluetoothService {
         cancelOnError: true,
       );
 
-      // ✅ Timeout ile path'i bekleyin
       receivedVideoPath = await completer.future.timeout(
         Duration(seconds: 10),
         onTimeout: () {
@@ -998,7 +993,8 @@ class BluetoothService {
         _sendNotification('✅ Video başarıyla gönderildi: $name', 'success');
         print("✅ Video path başarıyla alındı: $receivedVideoPath");
         return receivedVideoPath;
-      } else {
+      }
+      else {
         print("⚠️ Path alınamadı ama video gönderildi");
         _sendNotification('⚠️ Video gönderildi ama path alınamadı', 'warning');
         return null;
@@ -1054,11 +1050,18 @@ class BluetoothService {
   bool _veriIsRunning = false;
 
   Future<String> veri() async {
-    if (_veriIsRunning) return "";
+    if (_veriIsRunning) {
+      print("⚠️ veri() zaten çalışıyor, bekleniyor...");
+      await Future.delayed(Duration(milliseconds: 500));
+      return veri();
+    }
 
     _veriIsRunning = true;
 
     try {
+      _dataSubscription?.cancel();
+      _dataSubscription = null;
+
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
         await connectToCsServer(connectedDeviceMacAddress!);
         await Future.delayed(Duration(milliseconds: 500));
@@ -1072,9 +1075,7 @@ class BluetoothService {
       List<int> allBytes = [];
       final completer = Completer<String>();
 
-      _dataSubscription?.cancel();
-
-      late StreamSubscription<Uint8List> sub;   // 🔥 BURASI ÖNEMLİ
+      late StreamSubscription<Uint8List> sub;
 
       sub = _connectionInputStream!.listen(
             (Uint8List packet) {
@@ -1085,15 +1086,23 @@ class BluetoothService {
             String jsonStr = utf8.decode(pureBytes);
 
             sub.cancel();
-            completer.complete(jsonStr.trim());
+            if (!completer.isCompleted) {
+              completer.complete(jsonStr.trim());
+            }
           }
         },
         onError: (e) {
+          print("❌ Stream hatası: $e");
           if (!completer.isCompleted) completer.completeError(e);
         },
         onDone: () {
+          print("📭 Stream bitti");
           if (!completer.isCompleted) {
-            completer.complete(utf8.decode(allBytes).trim());
+            if (allBytes.isNotEmpty) {
+              completer.complete(utf8.decode(allBytes).trim());
+            } else {
+              completer.completeError(Exception("Veri alınamadı"));
+            }
           }
         },
         cancelOnError: true,
@@ -1101,7 +1110,14 @@ class BluetoothService {
 
       _dataSubscription = sub;
 
-      return await completer.future.timeout(Duration(seconds: 20));
+      return await completer.future.timeout(
+          Duration(seconds: 30),
+          onTimeout: () {
+            print("⏰ Timeout! Alınan veri: ${allBytes.length} bytes");
+            sub.cancel();
+            throw TimeoutException("full_data yanıtı alınamadı");
+          }
+      );
     } finally {
       _veriIsRunning = false;
     }
@@ -1117,21 +1133,16 @@ class BluetoothService {
           .length))}');
       print('📊 Toplam uzunluk: ${jsonStr.length}');
 
-      // Veriyi temizle
       jsonStr = jsonStr.trim();
 
-      // Eğer veri JSON formatındaysa direkt parse et
       Map<String, dynamic> parsedData;
 
       if (jsonStr.startsWith('{') || jsonStr.startsWith('[')) {
-        // Direkt JSON formatında
         print('✅ Veri JSON formatında, direkt parse ediliyor...');
         parsedData = jsonDecode(jsonStr);
       } else {
-        // Base64 olup olmadığını kontrol et
         print('⚠️ Veri JSON formatında değil, base64 kontrolü yapılıyor...');
         try {
-          // Base64 decode denemesi
           Uint8List decodedBytes = base64Decode(jsonStr);
           String decodedString = utf8.decode(decodedBytes);
           print('✅ Base64 decode başarılı, decoded veri: ${decodedString
@@ -1154,7 +1165,6 @@ class BluetoothService {
 
       print('✅ JSON parse başarılı, veri tipi: ${parsedData.runtimeType}');
 
-      // Thumbnail işlemleri
       if (parsedData.containsKey('bilgi') && parsedData['bilgi'] is List) {
         List<dynamic> bilgiList = parsedData['bilgi'];
         print('📸 ${bilgiList.length} adet bilgi öğesi işleniyor...');
@@ -1168,7 +1178,6 @@ class BluetoothService {
               String base64String = bilgiList[i]['thumbnailBase64'].toString();
               print('🖼️ Öğe $i: Thumbnail base64 uzunluğu: ${base64String.length}');
 
-              // Base64 string'i temizle (gerekiyorsa)
               base64String = base64String.trim();
 
               try {
@@ -1191,7 +1200,6 @@ class BluetoothService {
         print('ℹ️ Bilgi listesi bulunamadı veya liste değil');
       }
 
-      // isimlik verilerini de kontrol et
       if (parsedData.containsKey('isimlik') && parsedData['isimlik'] is List) {
         print('👥 ${parsedData['isimlik'].length} adet isimlik öğesi bulundu');
       }
@@ -1266,9 +1274,6 @@ class BluetoothService {
     _notificationController.close();
   }
 }
-
-
-
 
 class BluetoothConnectionPage extends StatefulWidget {
   @override

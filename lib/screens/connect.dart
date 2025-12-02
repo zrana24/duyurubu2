@@ -700,7 +700,7 @@ class _ConnectPageState extends State<ConnectPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Bağlantıyı Kessin mi?'),
+        title: Text('Bağlantıyı Kessin mi?',),
         content: Text(
           '$deviceName ile olan bağlantıyı kesmek istiyor musunuz?',
         ),
@@ -946,6 +946,7 @@ class _ConnectPageState extends State<ConnectPage> {
                                     color: Colors.white,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: 'brandontext',
                                   ),
                                 ),
                               ),

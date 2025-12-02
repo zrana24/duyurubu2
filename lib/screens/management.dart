@@ -141,7 +141,7 @@ class _ManagementState extends State<Management> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Veri yüklenemedi: ${e.toString()}'),
+            content: Text(Provider.of<LanguageProvider>(context, listen: false).getTranslation('data_load_error') + ': ${e.toString()}'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
@@ -154,6 +154,8 @@ class _ManagementState extends State<Management> {
   }
 
   Widget _buildErrorWidget() {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -161,7 +163,7 @@ class _ManagementState extends State<Management> {
           Icon(Icons.error_outline, size: 64, color: Colors.red),
           SizedBox(height: 16),
           Text(
-            'Veri Yüklenemedi',
+            languageProvider.getTranslation('data_load_error'),
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
@@ -173,7 +175,7 @@ class _ManagementState extends State<Management> {
           SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadSharedData,
-            child: Text('Tekrar Dene'),
+            child: Text(languageProvider.getTranslation('retry_button')),
           ),
         ],
       ),
@@ -320,6 +322,8 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Center(
@@ -344,7 +348,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           TextField(
                             enabled: !isLoading,
                             decoration: InputDecoration(
-                              labelText: 'Bölüm/Departman',
+                              labelText: languageProvider.getTranslation('department_label'),
                               border: OutlineInputBorder(),
                             ),
                             onChanged: (v) => department = v,
@@ -353,7 +357,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           TextField(
                             enabled: !isLoading,
                             decoration: InputDecoration(
-                              labelText: 'Ad Soyad',
+                              labelText: languageProvider.getTranslation('fullname_label'),
                               border: OutlineInputBorder(),
                             ),
                             onChanged: (v) => name = v,
@@ -366,7 +370,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             keyboardType: TextInputType.number,
                             inputFormatters: [TimeTextInputFormatter()],
                             decoration: InputDecoration(
-                              labelText: '00:00:00',
+                              labelText: languageProvider.getTranslation('time_placeholder'),
                               border: OutlineInputBorder(),
                             ),
                             onChanged: (value) {
@@ -378,7 +382,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Aktif Durum', style: TextStyle(fontSize: 16)),
+                              Text(languageProvider.getTranslation('active_status_label'), style: TextStyle(fontSize: 16)),
                               GestureDetector(
                                 onTap: () {
                                   setDialogState(() {
@@ -414,7 +418,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Aktif Buton', style: TextStyle(fontSize: 16)),
+                              Text(languageProvider.getTranslation('active_button_label'), style: TextStyle(fontSize: 16)),
                               GestureDetector(
                                 onTap: () {
                                   setDialogState(() {
@@ -454,7 +458,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                                 children: [
                                   CircularProgressIndicator(),
                                   SizedBox(width: 16),
-                                  Text('Bluetooth cihazına gönderiliyor...'),
+                                  Text(languageProvider.getTranslation('sending_bluetooth')),
                                 ],
                               ),
                             ),
@@ -468,7 +472,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             : () {
                           Navigator.of(context).pop();
                         },
-                        child: Text('İptal'),
+                        child: Text(languageProvider.getTranslation('cancel_button')),
                       ),
                       ElevatedButton(
                         onPressed: isLoading
@@ -477,7 +481,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                           if (department.isEmpty || name.isEmpty || time.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Lütfen tüm alanları doldurun'),
+                                content: Text(languageProvider.getTranslation('fill_all_fields')),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -499,20 +503,20 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Konuşmacı başarıyla eklendi'),
+                                content: Text(languageProvider.getTranslation('speaker_added_success')),
                                 backgroundColor: Colors.green,
                               ),
                             );
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Hata: $e'),
+                                content: Text(languageProvider.getTranslation('error') + ': $e'),
                                 backgroundColor: Colors.red,
                               ),
                             );
                           }
                         },
-                        child: Text('Ekle'),
+                        child: Text(languageProvider.getTranslation('add_button')),
                       ),
                     ],
                   ),
@@ -524,7 +528,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       },
     );
   }
-
 
   void _saveNewSpeaker(String department, String name, String time, bool toggleValue) {
     setState(() {
@@ -539,9 +542,11 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   }
 
   void _saveSpeaker(int index, String department, String name, String time) {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
     if (department.trim().isEmpty || name.trim().isEmpty || time.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Lütfen tüm alanları doldurun'),
+        content: Text(languageProvider.getTranslation('fill_all_fields')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -550,7 +555,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
 
     if (time.replaceAll(':', '').length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Geçersiz zaman formatı'),
+        content: Text(languageProvider.getTranslation('invalid_time_format')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -558,7 +563,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Konuşmacı başarıyla güncellendi'),
+      content: Text(languageProvider.getTranslation('speaker_updated_success')),
       backgroundColor: Colors.green,
       duration: const Duration(seconds: 2),
     ));
@@ -578,8 +583,8 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     setState(() {
       _speakers.removeAt(index);
       final parentState = context.findAncestorStateOfType<_ManagementState>();
-       parentState?._loadSharedData();
-       print("ben çalıştım amca");
+      parentState?._loadSharedData();
+      print("ben çalıştım amca");
     });
 
   }
@@ -593,6 +598,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final isTablet = screenWidth > 600;
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Column(
       children: [
@@ -632,7 +638,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                   ),
                 ),
                 Text(
-                  'İSİMLİK EKRANI',
+                  languageProvider.getTranslation('name_screen_header'),
                   style: TextStyle(
                     fontSize: isTablet ? 20 : 16,
                     fontWeight: FontWeight.w500,
@@ -660,7 +666,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'İSİM EKLE',
+                          languageProvider.getTranslation('add_speaker_btn'),
                           style: TextStyle(
                             fontSize: isTablet ? 13.5 : 11,
                             fontWeight: FontWeight.w400,
@@ -700,7 +706,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Konuşmacı bulunamadı',
+                  languageProvider.getTranslation('no_speakers_found'),
                   style: TextStyle(
                     fontSize: isTablet ? 16 : 14,
                     color: Colors.grey[600],
@@ -811,7 +817,7 @@ class _ContentManagementState extends State<ContentManagement> {
   void _addNewContent() {
     setState(() {
       _contents.add({
-        'title': 'Toplantı Konusu',
+        'title': Provider.of<LanguageProvider>(context, listen: false).getTranslation('meeting_topic'),
         'startTime': '00:00:00',
         'endTime': '00:00:00',
         'type': 'photo',
@@ -824,6 +830,8 @@ class _ContentManagementState extends State<ContentManagement> {
   }
 
   Future<void> _pickFile(int index) async {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -833,9 +841,9 @@ class _ContentManagementState extends State<ContentManagement> {
         return SafeArea(
           child: Wrap(
             children: [
-              ListTile(
+              /*ListTile(
                 leading: const Icon(Icons.photo, size: 22),
-                title: const Text('Fotoğraf Seç', style: TextStyle(fontSize: 14)),
+                title: Text(languageProvider.getTranslation('select_photo'), style: TextStyle(fontSize: 14)),
                 onTap: () async {
                   Navigator.pop(context);
                   final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -847,10 +855,10 @@ class _ContentManagementState extends State<ContentManagement> {
                     });
                   }
                 },
-              ),
+              ),*/
               ListTile(
                 leading: const Icon(Icons.videocam, size: 22),
-                title: const Text('Video Seç', style: TextStyle(fontSize: 14)),
+                title: Text(languageProvider.getTranslation('select_video'), style: TextStyle(fontSize: 14)),
                 onTap: () async {
                   Navigator.pop(context);
                   final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
@@ -891,6 +899,7 @@ class _ContentManagementState extends State<ContentManagement> {
     required int index,
     required File videoFile,
   }) {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     double uploadProgress = 0.0;
     bool isUploading = true;
     bool isCancelled = false;
@@ -917,7 +926,7 @@ class _ContentManagementState extends State<ContentManagement> {
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Video Gönderiliyor',
+                        languageProvider.getTranslation('video_sending_title'),
                         style: TextStyle(fontSize: 18),
                       ),
                     ),
@@ -938,7 +947,7 @@ class _ContentManagementState extends State<ContentManagement> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Boyut: $videoSizeMB MB',
+                      '${languageProvider.getTranslation('size_label')}: $videoSizeMB MB',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -977,7 +986,7 @@ class _ContentManagementState extends State<ContentManagement> {
                             Icon(Icons.check_circle, color: Colors.green, size: 20),
                             SizedBox(width: 8),
                             Text(
-                              'Video Gönderildi!\nŞimdi bilgileri girin.',
+                              languageProvider.getTranslation('video_sent_success'),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.green,
@@ -997,7 +1006,7 @@ class _ContentManagementState extends State<ContentManagement> {
                             Icon(Icons.cancel, color: Colors.red, size: 20),
                             SizedBox(width: 8),
                             Text(
-                              'Gönderim İptal Edildi',
+                              languageProvider.getTranslation('sending_cancelled'),
                               style: TextStyle(
                                 color: Colors.red,
                                 fontWeight: FontWeight.bold,
@@ -1022,14 +1031,14 @@ class _ContentManagementState extends State<ContentManagement> {
                         if (mounted) {
                           ScaffoldMessenger.of(this.context).showSnackBar(
                             SnackBar(
-                              content: Text('Video gönderimi iptal edildi'),
+                              content: Text(languageProvider.getTranslation('video_upload_cancelled')),
                               backgroundColor: Colors.orange,
                             ),
                           );
                         }
                       },
                       child: Text(
-                        'İptal',
+                        languageProvider.getTranslation('cancel_button'),
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
@@ -1043,7 +1052,7 @@ class _ContentManagementState extends State<ContentManagement> {
                         backgroundColor: Color(0xFF196E64),
                       ),
                       child: Text(
-                        'Tamam',
+                        languageProvider.getTranslation('ok_button'),
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -1078,19 +1087,19 @@ class _ContentManagementState extends State<ContentManagement> {
           uploadProgress = 100.0;
         });
 
-        
+
         String? serverVideoPath = _bluetoothService.receivedVideoPath;
         print(serverVideoPath);
         setState(() {
           _contents[index]['file'] = videoFile;
           _contents[index]['type'] = 'video';
           _contents[index]['videoPath'] = serverVideoPath;
-          
+
         });
 
         print('✅ Video path kaydedildi: ${_contents[index]['videoPath']}');
 
-        
+
         if (serverVideoPath != null && serverVideoPath.isNotEmpty) {
           ScaffoldMessenger.of(this.context).showSnackBar(
             SnackBar(
@@ -1111,7 +1120,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(
-            content: Text('Video gönderilemedi: $e'),
+            content: Text(languageProvider.getTranslation('video_send_error') + ': $e'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 4),
           ),
@@ -1121,9 +1130,11 @@ class _ContentManagementState extends State<ContentManagement> {
   }
 
   Future<void> _saveContent(int index, String title, String startTime, String endTime, bool isActive) async {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
     if (title.trim().isEmpty || startTime.trim().isEmpty || endTime.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Lütfen tüm alanları doldurun'),
+        content: Text(languageProvider.getTranslation('fill_all_fields')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -1134,7 +1145,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
     if (!timeRegex.hasMatch(startTime) || !timeRegex.hasMatch(endTime)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Geçersiz zaman formatı'),
+        content: Text(languageProvider.getTranslation('invalid_time_format')),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 2),
       ));
@@ -1142,13 +1153,13 @@ class _ContentManagementState extends State<ContentManagement> {
     }
 
     try {
-      
+
       String? videoPath = _contents[index]['videoPath'] as String?;
 
-      
+
       if (videoPath == null || videoPath.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('Video yolu bulunamadı. Lütfen önce video yükleyin.'),
+          content: Text(languageProvider.getTranslation('video_path_not_found')),
           backgroundColor: Colors.orange,
           duration: const Duration(seconds: 3),
         ));
@@ -1157,7 +1168,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
       print('📤 bilgiAdd çağrılıyor - path: $videoPath');
 
-      
+
       await _bluetoothService.bilgiAdd(
         meeting_title: title.trim(),
         start_hour: startTime,
@@ -1168,7 +1179,7 @@ class _ContentManagementState extends State<ContentManagement> {
       );
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('İçerik başarıyla eklendi ve cihaza gönderildi'),
+        content: Text(languageProvider.getTranslation('content_added_success')),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
       ));
@@ -1189,7 +1200,7 @@ class _ContentManagementState extends State<ContentManagement> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Hata: ${e.toString()}'),
+        content: Text('${languageProvider.getTranslation('error')}: ${e.toString()}'),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
       ));
@@ -1217,10 +1228,12 @@ class _ContentManagementState extends State<ContentManagement> {
     }
   }
 
-  void _exportToComputer() async {
+  /*void _exportToComputer() async {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
     if (_contents.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Aktarılacak içerik bulunamadı.'),
+        content: Text(languageProvider.getTranslation('export_no_content')),
         backgroundColor: Colors.orange,
         duration: const Duration(seconds: 2),
       ));
@@ -1239,7 +1252,7 @@ class _ContentManagementState extends State<ContentManagement> {
 
     try {
       String? outputFile = await FilePicker.platform.saveFile(
-        dialogTitle: 'İçerikleri Kaydet',
+        dialogTitle: languageProvider.getTranslation('export_computer_btn'),
         fileName: 'toplanti_icerikleri_${DateTime.now().millisecondsSinceEpoch}.json',
       );
 
@@ -1254,13 +1267,14 @@ class _ContentManagementState extends State<ContentManagement> {
     } catch (e) {
       print('Aktarma hatası: $e');
     }
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final isTablet = screenWidth > 600;
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Column(
       children: [
@@ -1300,7 +1314,7 @@ class _ContentManagementState extends State<ContentManagement> {
                   ),
                 ),
                 Text(
-                  'BİLGİ EKRANI',
+                  languageProvider.getTranslation('info_screen_header'),
                   style: TextStyle(
                     fontSize: isTablet ? 20 : 16,
                     fontWeight: FontWeight.w500,
@@ -1310,7 +1324,7 @@ class _ContentManagementState extends State<ContentManagement> {
                 ),
                 const Spacer(),
                 if (screenWidth > 400)
-                  GestureDetector(
+                  /*GestureDetector(
                     onTap: _exportToComputer,
                     child: Container(
                       padding: EdgeInsets.symmetric(
@@ -1331,7 +1345,7 @@ class _ContentManagementState extends State<ContentManagement> {
                         children: [
                           if (screenWidth > 500)
                             Text(
-                              'BİLGİSAYARA AKTAR',
+                              languageProvider.getTranslation('export_computer_btn'),
                               style: TextStyle(
                                 fontSize: isTablet ? 13.5 : 11,
                                 fontWeight: FontWeight.w400,
@@ -1348,7 +1362,7 @@ class _ContentManagementState extends State<ContentManagement> {
                         ],
                       ),
                     ),
-                  ),
+                  ),*/
                 GestureDetector(
                   onTap: _addNewContent,
                   child: Container(
@@ -1369,7 +1383,7 @@ class _ContentManagementState extends State<ContentManagement> {
                       children: [
                         if (screenWidth > 400)
                           Text(
-                            'İÇERİK EKLE',
+                            languageProvider.getTranslation('add_content_btn'),
                             style: TextStyle(
                               fontSize: isTablet ? 13.5 : 11,
                               fontWeight: FontWeight.w400,
@@ -1409,7 +1423,7 @@ class _ContentManagementState extends State<ContentManagement> {
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  'İçerik bulunamadı',
+                  languageProvider.getTranslation('no_content_found'),
                   style: TextStyle(
                     fontSize: isTablet ? 16 : 14,
                     color: Colors.grey[600],
@@ -1587,6 +1601,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
   Widget build(BuildContext context) {
     final cardHeight = widget.isTablet ? 143.0 : 133.0;
     final borderColor = _getBorderColor();
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Container(
         margin: EdgeInsets.only(
@@ -1626,7 +1641,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
             Positioned(
               left: widget.isTablet ? 28.0 : 20.0,
               top: -8.0,
-              child: _buildSpeakerBadgeWithBorder(widget.index + 1, borderColor),
+              child: _buildSpeakerBadgeWithBorder(widget.index + 1, borderColor, languageProvider),
             ),
           ],
         )
@@ -1816,7 +1831,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     return GestureDetector(
       key: ValueKey(widget.index),
       onTap: () async {
-        
+
       },
       child: Container(
         width: widget.isTablet ? 30 : 26,
@@ -1842,7 +1857,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     );
   }
 
-  Widget _buildSpeakerBadgeWithBorder(int number, Color borderColor) {
+  Widget _buildSpeakerBadgeWithBorder(int number, Color borderColor, LanguageProvider languageProvider) {
     final fontSize = widget.isTablet ? 12.0 : 10.0;
     final verticalPadding = widget.isTablet ? 3.0 : 2.0;
 
@@ -1851,7 +1866,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
         vertical: verticalPadding,
       ),
       child: Text(
-        '$number. KONUŞMACI BİLGİSİ',
+        '$number. ${languageProvider.getTranslation('speaker_badge')}',
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.w500,
@@ -1869,15 +1884,14 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
       height: widget.isTablet ? 143 : 0,
       padding: EdgeInsets.only(
         right: widget.isTablet ? 12 : 0,
-        top: widget.isTablet ? 10 : 0,
-        bottom: widget.isTablet ? 10 : 0,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
                 onTap: () async {
@@ -1892,10 +1906,10 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                 },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
-                  height: widget.isTablet ? 57 : 0,
+                  height: widget.isTablet ? 48 : 0,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F4F4),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: const Color(0xFF52596C),
                       width: 0.5,
@@ -1910,7 +1924,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                   ),
                 ),
               ),
-              SizedBox(height: widget.isTablet ? 2 : 0),
+              SizedBox(height: widget.isTablet ? 8 : 0),
               GestureDetector(
                 onTap: () async {
                   int id = widget.index;
@@ -1924,10 +1938,10 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                 },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
-                  height: widget.isTablet ? 56 : 0,
+                  height: widget.isTablet ? 48 : 0,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F4F4),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: const Color(0xFF52596C),
                       width: 0.5,
@@ -2086,6 +2100,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
   }
 
   Widget _buildFilePreview() {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
     if (widget.content['thumbnail'] != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -2112,7 +2128,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
             },
           ),
         );
-      } else if (fileType == 'video') {
+      }
+      else if (fileType == 'video') {
         return Container(
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.1),
@@ -2129,7 +2146,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  'Video',
+                  languageProvider.getTranslation('video_label'),
                   style: TextStyle(
                     fontSize: widget.isTablet ? 14 : 12,
                     color: Colors.red,
@@ -2154,6 +2171,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
   Widget build(BuildContext context) {
     final cardHeight = widget.isTablet ? 143.0 : 133.0;
     final borderColor = _getBorderColor();
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Container(
       margin: EdgeInsets.only(
@@ -2186,7 +2204,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                   child: _buildLeftSection(borderColor),
                 ),
                 if (widget.isTablet)
-                  _buildRightSection(borderColor)
+                  _buildRightSection(borderColor, languageProvider)
                 else
                   const SizedBox.shrink(),
               ],
@@ -2195,7 +2213,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
           Positioned(
             left: widget.isTablet ? 28.0 : 20.0,
             top: -8.0,
-            child: _buildContentBadgeWithBorder(widget.index + 1, borderColor),
+            child: _buildContentBadgeWithBorder(widget.index + 1, borderColor, languageProvider),
           ),
         ],
       ),
@@ -2431,7 +2449,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
     );
   }
 
-  Widget _buildContentBadgeWithBorder(int number, Color borderColor) {
+  Widget _buildContentBadgeWithBorder(int number, Color borderColor, LanguageProvider languageProvider) {
     final fontSize = widget.isTablet ? 12.0 : 10.0;
     final verticalPadding = widget.isTablet ? 3.0 : 2.0;
 
@@ -2440,7 +2458,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
         vertical: verticalPadding,
       ),
       child: Text(
-        '$number. İÇERİK',
+        '$number. ${languageProvider.getTranslation('content_badge')}',
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.w500,
@@ -2452,14 +2470,13 @@ class _EditableContentCardState extends State<EditableContentCard> {
     );
   }
 
-  Widget _buildRightSection(Color borderColor) {
+  Widget _buildRightSection(Color borderColor, LanguageProvider languageProvider) {
     if (_isEditing) {
       return Container(
         width: widget.isTablet ? 120 : 0,
         height: widget.isTablet ? 143 : 0,
         padding: EdgeInsets.symmetric(
           horizontal: widget.isTablet ? 8 : 0,
-          vertical: widget.isTablet ? 10 : 0,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2479,7 +2496,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                 ),
                 child: Center(
                   child: Text(
-                    'KAYDET',
+                    languageProvider.getTranslation('save_button'),
                     style: TextStyle(
                       fontSize: widget.isTablet ? 12 : 10,
                       fontWeight: FontWeight.w500,
@@ -2505,7 +2522,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                 ),
                 child: Center(
                   child: Text(
-                    'İPTAL',
+                    languageProvider.getTranslation('cancel_button'),
                     style: TextStyle(
                       fontSize: widget.isTablet ? 12 : 10,
                       fontWeight: FontWeight.w500,
@@ -2525,15 +2542,14 @@ class _EditableContentCardState extends State<EditableContentCard> {
       height: widget.isTablet ? 143 : 0,
       padding: EdgeInsets.only(
         right: widget.isTablet ? 12 : 0,
-        top: widget.isTablet ? 10 : 0,
-        bottom: widget.isTablet ? 10 : 0,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
                 onTap: () async {
@@ -2543,16 +2559,15 @@ class _EditableContentCardState extends State<EditableContentCard> {
                   print("delete tıklandı → id:$id tip:$tip");
 
                   await _bluetooth.delete(id: id, tip: tip);
-                  final parentState = context.findAncestorStateOfType<
-                      _ManagementState>();
+                  final parentState = context.findAncestorStateOfType<_ManagementState>();
                   parentState?._loadSharedData();
                 },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
-                  height: widget.isTablet ? 57 : 0,
+                  height: widget.isTablet ? 48 : 0,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F4), 
-                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFFF4F4F4),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: const Color(0xFF52596C),
                       width: 0.5,
@@ -2567,7 +2582,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                   ),
                 ),
               ),
-              SizedBox(height: widget.isTablet ? 2 : 0),
+              SizedBox(height: widget.isTablet ? 8 : 0),
               GestureDetector(
                 onTap: () async {
                   int id = widget.index;
@@ -2576,16 +2591,15 @@ class _EditableContentCardState extends State<EditableContentCard> {
 
                   print("play tıklandı → id:$id tip:$tip");
 
-                  await _bluetooth.playStatus(
-                      id: id, tip: tip, isPlaying: _isPlaying);
+                  await _bluetooth.playStatus(id: id, tip: tip, isPlaying: _isPlaying);
                   _togglePlay();
                 },
                 child: Container(
                   width: widget.isTablet ? 48 : 0,
-                  height: widget.isTablet ? 56 : 0,
+                  height: widget.isTablet ? 48 : 0,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F4F4),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: const Color(0xFF52596C),
                       width: 0.5,

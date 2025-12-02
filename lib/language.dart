@@ -83,15 +83,11 @@ class LanguageProvider extends ChangeNotifier {
       'add_speaker_btn': 'İSİM EKLE',
       'speaker_badge': 'KONUŞMACI BİLGİSİ',
       'no_speakers_found': 'Konuşmacı bulunamadı',
-
-      
       'info_screen_header': 'BİLGİ EKRANI',
       'add_content_btn': 'İÇERİK EKLE',
       'export_computer_btn': 'BİLGİSAYARA AKTAR',
       'content_badge': 'İÇERİK',
       'no_content_found': 'İçerik bulunamadı',
-
-      
       'department_label': 'Bölüm/Departman',
       'fullname_label': 'Ad Soyad',
       'time_placeholder': '00:00:00',
@@ -99,7 +95,6 @@ class LanguageProvider extends ChangeNotifier {
       'active_button_label': 'Aktif Buton',
       'sending_bluetooth': 'Bluetooth cihazına gönderiliyor...',
       'add_button': 'Ekle',
-
       'video_sending_title': 'Video Gönderiliyor',
       'size_label': 'Boyut',
       'video_sent_success': 'Video Gönderildi!\nŞimdi bilgileri girin.',
@@ -118,14 +113,9 @@ class LanguageProvider extends ChangeNotifier {
       'export_no_content': 'Aktarılacak içerik bulunamadı.',
       'data_load_error': 'Veri Yüklenemedi',
       'retry_button': 'Tekrar Dene',
-
-      
       'save_button': 'KAYDET',
       'cancel_button': 'İPTAL',
-
-      
       'video_label': 'Video',
-
     },
     'en': {
       'name_screen': 'NAME SCREEN',
@@ -193,15 +183,11 @@ class LanguageProvider extends ChangeNotifier {
       'add_speaker_btn': 'ADD NAME',
       'speaker_badge': 'SPEAKER INFO',
       'no_speakers_found': 'No speakers found',
-
-      
       'info_screen_header': 'INFO SCREEN',
       'add_content_btn': 'ADD CONTENT',
       'export_computer_btn': 'EXPORT TO COMPUTER',
       'content_badge': 'CONTENT',
       'no_content_found': 'No content found',
-
-      
       'department_label': 'Department/Division',
       'fullname_label': 'Full Name',
       'time_placeholder': '00:00:00',
@@ -209,19 +195,13 @@ class LanguageProvider extends ChangeNotifier {
       'active_button_label': 'Active Button',
       'sending_bluetooth': 'Sending to Bluetooth device...',
       'add_button': 'Add',
-
-      
       'video_sending_title': 'Sending Video',
       'size_label': 'Size',
       'video_sent_success': 'Video Sent!\nNow enter the information.',
       'sending_cancelled': 'Sending Cancelled',
       'ok_button': 'OK',
-
-      
       'select_photo': 'Select Photo',
       'select_video': 'Select Video',
-
-      
       'fill_all_fields': 'Please fill in all fields',
       'speaker_added_success': 'Speaker successfully added',
       'speaker_updated_success': 'Speaker successfully updated',
@@ -233,12 +213,8 @@ class LanguageProvider extends ChangeNotifier {
       'export_no_content': 'No content to export.',
       'data_load_error': 'Data Could Not Be Loaded',
       'retry_button': 'Try Again',
-
-      
       'save_button': 'SAVE',
       'cancel_button': 'CANCEL',
-
-      
       'video_label': 'Video',
     },
     'ru': {
@@ -307,15 +283,11 @@ class LanguageProvider extends ChangeNotifier {
       'add_speaker_btn': 'ДОБАВИТЬ ИМЯ',
       'speaker_badge': 'ИНФОРМАЦИЯ О ДОКЛАДЧИКЕ',
       'no_speakers_found': 'Докладчики не найдены',
-
-      
       'info_screen_header': 'ИНФОРМАЦИОННЫЙ ЭКРАН',
       'add_content_btn': 'ДОБАВИТЬ КОНТЕНТ',
       'export_computer_btn': 'ЭКСПОРТ НА КОМПЬЮТЕР',
       'content_badge': 'СОДЕРЖАНИЕ',
       'no_content_found': 'Контент не найден',
-
-      
       'department_label': 'Отдел/Подразделение',
       'fullname_label': 'ФИО',
       'time_placeholder': '00:00:00',
@@ -323,19 +295,13 @@ class LanguageProvider extends ChangeNotifier {
       'active_button_label': 'Активная кнопка',
       'sending_bluetooth': 'Отправка на устройство Bluetooth...',
       'add_button': 'Добавить',
-
-      
       'video_sending_title': 'Отправка видео',
       'size_label': 'Размер',
       'video_sent_success': 'Видео отправлено!\nТеперь введите информацию.',
       'sending_cancelled': 'Отправка отменена',
       'ok_button': 'ОК',
-
-      
       'select_photo': 'Выбрать фото',
       'select_video': 'Выбрать видео',
-
-      
       'fill_all_fields': 'Пожалуйста, заполните все поля',
       'speaker_added_success': 'Докладчик успешно добавлен',
       'speaker_updated_success': 'Докладчик успешно обновлен',
@@ -347,12 +313,8 @@ class LanguageProvider extends ChangeNotifier {
       'export_no_content': 'Нет контента для экспорта.',
       'data_load_error': 'Не удалось загрузить данные',
       'retry_button': 'Повторить',
-
-      
       'save_button': 'СОХРАНИТЬ',
       'cancel_button': 'ОТМЕНА',
-
-      
       'video_label': 'Видео',
     },
     'ar': {
@@ -421,15 +383,11 @@ class LanguageProvider extends ChangeNotifier {
       'add_speaker_btn': 'إضافة اسم',
       'speaker_badge': 'معلومات المتحدث',
       'no_speakers_found': 'لم يتم العثور على متحدثين',
-
-      
       'info_screen_header': 'شاشة المعلومات',
       'add_content_btn': 'إضافة محتوى',
       'export_computer_btn': 'تصدير إلى الكمبيوتر',
       'content_badge': 'المحتوى',
       'no_content_found': 'لم يتم العثور على محتوى',
-
-      
       'department_label': 'القسم/الإدارة',
       'fullname_label': 'الاسم الكامل',
       'time_placeholder': '00:00:00',
@@ -437,19 +395,13 @@ class LanguageProvider extends ChangeNotifier {
       'active_button_label': 'زر نشط',
       'sending_bluetooth': 'الإرسال إلى جهاز البلوتوث...',
       'add_button': 'إضافة',
-
-      
       'video_sending_title': 'إرسال الفيديو',
       'size_label': 'الحجم',
       'video_sent_success': 'تم إرسال الفيديو!\nأدخل المعلومات الآن.',
       'sending_cancelled': 'تم إلغاء الإرسال',
       'ok_button': 'حسناً',
-
-      
       'select_photo': 'اختر صورة',
       'select_video': 'اختر فيديو',
-
-      
       'fill_all_fields': 'يرجى ملء جميع الحقول',
       'speaker_added_success': 'تمت إضافة المتحدث بنجاح',
       'speaker_updated_success': 'تم تحديث المتحدث بنجاح',
@@ -461,12 +413,8 @@ class LanguageProvider extends ChangeNotifier {
       'export_no_content': 'لا يوجد محتوى للتصدير.',
       'data_load_error': 'تعذر تحميل البيانات',
       'retry_button': 'حاول مرة أخرى',
-
-      
       'save_button': 'حفظ',
       'cancel_button': 'إلغاء',
-
-      
       'video_label': 'فيديو',
     },
   };
