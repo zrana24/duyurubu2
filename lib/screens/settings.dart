@@ -4,6 +4,8 @@ import '../language.dart';
 import 'package:provider/provider.dart';
 import '../image.dart';
 import 'connected.dart';
+import 'dart:async';
+import 'connect.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -21,6 +23,29 @@ class _SettingsPageState extends State<SettingsPage> {
   double _infoScreenVolume = 1.0;
 
   BluetoothService get _bluetoothService => BluetoothService();
+
+  StreamSubscription<Map<String, dynamic>>? _navigationSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _navigationSubscription = _bluetoothService.notificationStream.listen((notification) {
+      if (!mounted) return;
+
+      if (notification['type'] == 'navigation' && notification['message'] == 'navigate_to_connect') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => ConnectPage()),
+              (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _navigationSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +347,7 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF1D7269), width: 1),
+        border: Border.all(color: const Color(0xFF1D7269), width: 0.7),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -403,7 +428,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: Colors.black, width: 1),
+                        side: BorderSide(color: Colors.black, width: 0.5),
                       ),
                       child: Container(
                         padding: EdgeInsets.all(isTablet ? 12 : 16),
@@ -435,7 +460,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                                   width: containerWidth * brightnessValue,
                                                   height: double.infinity,
                                                   decoration: BoxDecoration(
-                                                      color: const Color(0xFF6D8094),
+                                                    color: const Color(0xFF6D8094),
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                 ),
@@ -504,12 +529,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         padding: EdgeInsets.symmetric(
                           horizontal: isTablet ? 6 : 8,
                         ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                         child: Text(
                           "EKRAN PARLAKLIGI",
                           style: TextStyle(
                             fontSize: isTablet ? 12 : 14,
                             color: Colors.black,
-                            backgroundColor: Colors.white,
                             fontFamily: 'brandontext',
                           ),
                         ),
@@ -527,7 +555,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: Colors.black, width: 1),
+                          side: BorderSide(color: Colors.black, width: 0.5),
                         ),
                         child: Container(
                           padding: EdgeInsets.all(isTablet ? 12 : 16),
@@ -628,12 +656,14 @@ class _SettingsPageState extends State<SettingsPage> {
                           padding: EdgeInsets.symmetric(
                             horizontal: isTablet ? 6 : 8,
                           ),
+                          decoration: BoxDecoration(
+                            color: Colors.white
+                          ),
                           child: Text(
                             languageProvider.getTranslation('volume_level'),
                             style: TextStyle(
                               fontSize: isTablet ? 12 : 14,
                               color: Colors.black,
-                              backgroundColor: Colors.white,
                               fontFamily: 'brandontext',
                             ),
                           ),

@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'connected.dart';
 import 'dart:convert';
+import 'connect.dart';
 
 class TimeTextInputFormatter extends TextInputFormatter {
   @override
@@ -88,11 +89,23 @@ class _ManagementState extends State<Management> {
   bool _isLoadingData = false;
   bool _hasError = false;
   String _errorMessage = '';
+  StreamSubscription<Map<String, dynamic>>? _navigationSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadSharedData();
+
+    _navigationSubscription = _bluetoothService.notificationStream.listen((notification) {
+      if (!mounted) return;
+
+      if (notification['type'] == 'navigation' && notification['message'] == 'navigate_to_connect') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => ConnectPage()),
+              (route) => false,
+        );
+      }
+    });
   }
 
   @override
@@ -305,249 +318,30 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   }
 
   void _addNewSpeaker() {
-    _showAddSpeakerDialog();
-  }
-
-  void _showAddSpeakerDialog() {
-    String department = '';
-    String name = '';
-    String time = '';
-    bool isLoading = false;
-    bool toggleValue = false;
-    bool buttonStatus = false;
-
-    final timeController = TextEditingController(text: '');
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Center(
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: 450,
-                    maxHeight: MediaQuery.of(context).size.height * 0.85,
-                  ),
-                  child: AlertDialog(
-                    insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                    titlePadding: EdgeInsets.fromLTRB(24, 24, 24, 24),
-                    contentPadding: EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    actionsPadding: EdgeInsets.fromLTRB(24, 0, 24, 20),
-                    content: SingleChildScrollView(
-                      physics: BouncingScrollPhysics(),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(height: 8),
-                          TextField(
-                            enabled: !isLoading,
-                            decoration: InputDecoration(
-                              labelText: languageProvider.getTranslation('department_label'),
-                              labelStyle: TextStyle(fontFamily: 'brandontext'),
-                              border: OutlineInputBorder(),
-                            ),
-                            style: TextStyle(fontFamily: 'brandontext'),
-                            onChanged: (v) => department = v,
-                          ),
-                          SizedBox(height: 20),
-                          TextField(
-                            enabled: !isLoading,
-                            decoration: InputDecoration(
-                              labelText: languageProvider.getTranslation('fullname_label'),
-                              labelStyle: TextStyle(fontFamily: 'brandontext'),
-                              border: OutlineInputBorder(),
-                            ),
-                            style: TextStyle(fontFamily: 'brandontext'),
-                            onChanged: (v) => name = v,
-                          ),
-                          SizedBox(height: 20),
-
-                          TextField(
-                            enabled: !isLoading,
-                            controller: timeController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [TimeTextInputFormatter()],
-                            decoration: InputDecoration(
-                              labelText: languageProvider.getTranslation('time_placeholder'),
-                              labelStyle: TextStyle(fontFamily: 'brandontext'),
-                              border: OutlineInputBorder(),
-                            ),
-                            style: TextStyle(fontFamily: 'brandontext'),
-                            onChanged: (value) {
-                              time = value;
-                            },
-                          ),
-                          SizedBox(height: 20),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(languageProvider.getTranslation('active_status_label'), style: TextStyle(fontSize: 16, fontFamily: 'brandontext')),
-                              GestureDetector(
-                                onTap: () {
-                                  setDialogState(() {
-                                    toggleValue = !toggleValue;
-                                  });
-                                },
-                                child: Container(
-                                  width: 50,
-                                  height: 26,
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: BoxDecoration(
-                                    color: toggleValue ? const Color(0xFF196E64) : Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: AnimatedAlign(
-                                    duration: Duration(milliseconds: 200),
-                                    alignment: toggleValue ? Alignment.centerRight : Alignment.centerLeft,
-                                    child: Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(languageProvider.getTranslation('active_button_label'), style: TextStyle(fontSize: 16, fontFamily: 'brandontext')),
-                              GestureDetector(
-                                onTap: () {
-                                  setDialogState(() {
-                                    buttonStatus = !buttonStatus;
-                                  });
-                                },
-                                child: Container(
-                                  width: 50,
-                                  height: 26,
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: BoxDecoration(
-                                    color: buttonStatus ? const Color(0xFF196E64) : Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: AnimatedAlign(
-                                    duration: Duration(milliseconds: 200),
-                                    alignment: buttonStatus ? Alignment.centerRight : Alignment.centerLeft,
-                                    child: Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          if (isLoading)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(),
-                                  SizedBox(width: 16),
-                                  Text(languageProvider.getTranslation('sending_bluetooth'), style: TextStyle(fontFamily: 'brandontext')),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: isLoading
-                            ? null
-                            : () {
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(languageProvider.getTranslation('cancel_button'), style: TextStyle(fontFamily: 'brandontext')),
-                      ),
-                      ElevatedButton(
-                        onPressed: isLoading
-                            ? null
-                            : () async {
-                          if (department.isEmpty || name.isEmpty || time.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(languageProvider.getTranslation('fill_all_fields'), style: TextStyle(fontFamily: 'brandontext')),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          try {
-                            await _bluetoothService.isimlikAdd(
-                              name: name,
-                              title: department,
-                              togle: toggleValue,
-                              isActive: buttonStatus,
-                              time: time,
-                            );
-
-                            _saveNewSpeaker(department, name, time, toggleValue);
-
-                            Navigator.of(context).pop();
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(languageProvider.getTranslation('speaker_added_success'), style: TextStyle(fontFamily: 'brandontext')),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(languageProvider.getTranslation('error') + ': $e', style: TextStyle(fontFamily: 'brandontext')),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
-                        child: Text(languageProvider.getTranslation('add_button'), style: TextStyle(fontFamily: 'brandontext')),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _saveNewSpeaker(String department, String name, String time, bool toggleValue) {
     setState(() {
       _speakers.add({
-        'department': department.trim(),
-        'name': name.trim(),
-        'time': time,
-        'isEditing': false,
-        'isActive': toggleValue,
+        'department': Provider.of<LanguageProvider>(context, listen: false).getTranslation('department_label'),
+        'name': Provider.of<LanguageProvider>(context, listen: false).getTranslation('fullname_label'),
+        'time': '00:00:00',
+        'isEditing': true,
+        'isNew': true,
+        'isActive': false,
+        'toggle': false,
+      });
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(Duration(milliseconds: 100), () {
+        Scrollable.ensureVisible(
+          context,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       });
     });
   }
 
-  void _saveSpeaker(int index, String department, String name, String time) {
+  void _saveSpeaker(int index, String department, String name, String time, bool toggleValue) async {
     final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
 
     if (department.trim().isEmpty || name.trim().isEmpty || time.trim().isEmpty) {
@@ -568,20 +362,48 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(languageProvider.getTranslation('speaker_updated_success'), style: TextStyle(fontFamily: 'brandontext')),
-      backgroundColor: Colors.green,
-      duration: const Duration(seconds: 2),
-    ));
+    try {
+      await _bluetoothService.isimlikAdd(
+        name: name,
+        title: department,
+        togle: toggleValue,
+        isActive: false,
+        time: time,
+      );
+      print(toggleValue);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(languageProvider.getTranslation('speaker_added_success'), style: TextStyle(fontFamily: 'brandontext')),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ));
 
+      setState(() {
+        _speakers[index] = {
+          'department': department.trim(),
+          'name': name.trim(),
+          'time': time,
+          'isEditing': false,
+          'isNew': false,
+          'isActive': toggleValue,
+          'toggle': false,
+        };
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(languageProvider.getTranslation('error') + ': $e', style: TextStyle(fontFamily: 'brandontext')),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ));
+    }
+  }
+
+  void _cancelEdit(int index) {
     setState(() {
-      _speakers[index] = {
-        'department': department.trim(),
-        'name': name.trim(),
-        'time': time,
-        'isEditing': false,
-        'isActive': _speakers[index]['isActive'] ?? false,
-      };
+      if (_speakers[index]['isNew'] == true) {
+        _speakers.removeAt(index);
+      } else {
+        _speakers[index]['isEditing'] = false;
+      }
     });
   }
 
@@ -591,7 +413,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       final parentState = context.findAncestorStateOfType<_ManagementState>();
       parentState?._loadSharedData();
     });
-
   }
 
   Widget build(BuildContext context) {
@@ -726,7 +547,9 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                       speaker: _speakers[index],
                       index: index,
                       isTablet: isTablet,
-                      onSave: (department, name, time) => _saveSpeaker(index, department, name, time),
+                      onSave: (department, name, time, toggleValue) =>
+                          _saveSpeaker(index, department, name, time, toggleValue),
+                      onCancel: () => _cancelEdit(index),
                       onDelete: () => _deleteSpeaker(index),
                       onToggleChange: (value) {
                         setState(() {
@@ -1411,7 +1234,8 @@ class EditableSpeakerCard extends StatefulWidget {
   final Map<String, dynamic> speaker;
   final int index;
   final bool isTablet;
-  final Function(String, String, String) onSave;
+  final Function(String, String, String, bool) onSave;
+  final VoidCallback onCancel;
   final VoidCallback onDelete;
   final Function(bool) onToggleChange;
 
@@ -1421,6 +1245,7 @@ class EditableSpeakerCard extends StatefulWidget {
     required this.index,
     required this.isTablet,
     required this.onSave,
+    required this.onCancel,
     required this.onDelete,
     required this.onToggleChange,
   }) : super(key: key);
@@ -1558,7 +1383,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                     child: _buildLeftSection(borderColor),
                   ),
                   if (widget.isTablet)
-                    _buildRightSection(borderColor)
+                    _buildRightSection(borderColor, languageProvider)
                   else
                     const SizedBox.shrink(),
                 ],
@@ -1566,7 +1391,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
             ),
             Positioned(
               left: widget.isTablet ? 28.0 : 20.0,
-              top: -8.0,
+              top: -10.0,
               child: _buildSpeakerBadgeWithBorder(widget.index + 1, borderColor, languageProvider),
             ),
           ],
@@ -1688,6 +1513,10 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                   const Spacer(),
                   _buildToggleSwitch(),
                 ],
+                if (_isEditing) ...[
+                  const Spacer(),
+                  _buildToggleSwitch(),
+                ],
               ],
             ),
           ],
@@ -1702,10 +1531,12 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
         width: isTablet ? 120.0 : 110.0,
         child: TextField(
           controller: controller,
+          keyboardType: TextInputType.number,
+          inputFormatters: [TimeTextInputFormatter()],
           style: TextStyle(
             fontSize: isTablet ? 16.0 : 14,
             fontWeight: FontWeight.w400,
-            fontFamily: 'monospace',
+            fontFamily: 'brandontext',
             color: textColor,
             height: 0.70,
             letterSpacing: 2.5,
@@ -1730,7 +1561,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
               style: TextStyle(
                 fontSize: isTablet ? 16.0 : 14,
                 fontWeight: FontWeight.w400,
-                fontFamily: 'monospace',
+                fontFamily: 'brandontext',
                 color: textColor,
                 height: 0.70,
                 letterSpacing: 0,
@@ -1762,9 +1593,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
   Widget _buildToggleSwitch() {
     return GestureDetector(
       key: ValueKey(widget.index),
-      onTap: () async {
-
-      },
+      onTap: _isEditing ? _toggleSwitch : null,
       child: Container(
         width: widget.isTablet ? 30 : 26,
         height: widget.isTablet ? 14 : 12,
@@ -1792,7 +1621,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
   Widget _buildSpeakerBadgeWithBorder(int number, Color borderColor, LanguageProvider languageProvider) {
     final fontSize = widget.isTablet ? 12.0 : 10.0;
     final horizontalPadding = widget.isTablet ? 8.0 : 6.0;
-    final verticalPadding = widget.isTablet ? 4.0 : 3.0;
+    final verticalPadding = widget.isTablet ? 4.0 : 2.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -1820,7 +1649,82 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     );
   }
 
-  Widget _buildRightSection(Color borderColor) {
+  Widget _buildRightSection(Color borderColor, LanguageProvider languageProvider) {
+    if (_isEditing) {
+      return Container(
+        width: widget.isTablet ? 120 : 0,
+        height: widget.isTablet ? 143 : 0,
+        padding: EdgeInsets.symmetric(
+          horizontal: widget.isTablet ? 8 : 0,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () {
+                widget.onSave(
+                  _departmentController.text,
+                  _nameController.text,
+                  _timeController.text,
+                  _isSwitchActive,
+                );
+              },
+              child: Container(
+                width: widget.isTablet ? 90 : 0,
+                height: widget.isTablet ? 42 : 0,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF196E64),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFF52596C),
+                    width: 0.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    languageProvider.getTranslation('save_button'),
+                    style: TextStyle(
+                      fontSize: widget.isTablet ? 12 : 10,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                      fontFamily: 'brandontext',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: widget.isTablet ? 8 : 0),
+            GestureDetector(
+              onTap: widget.onCancel,
+              child: Container(
+                width: widget.isTablet ? 90 : 0,
+                height: widget.isTablet ? 42 : 0,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFF52596C),
+                    width: 0.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    languageProvider.getTranslation('cancel_button'),
+                    style: TextStyle(
+                      fontSize: widget.isTablet ? 12 : 10,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF1D1D1D),
+                      fontFamily: 'brandontext',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: widget.isTablet ? 120 : 0,
       height: widget.isTablet ? 143 : 0,
@@ -2161,7 +2065,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
           ),
           Positioned(
             left: widget.isTablet ? 28.0 : 20.0,
-            top: -8.0,
+            top: -10.0,
             child: _buildContentBadgeWithBorder(widget.index + 1, borderColor, languageProvider),
           ),
         ],
@@ -2358,7 +2262,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
           style: TextStyle(
             fontSize: isTablet ? 13.0 : 11,
             fontWeight: FontWeight.w400,
-            fontFamily: 'monospace',
+            fontFamily: 'brandontext',
             color: textColor,
             height: 0.70,
             letterSpacing: 1.0,
@@ -2384,7 +2288,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
               style: TextStyle(
                 fontSize: isTablet ? 13.0 : 11,
                 fontWeight: FontWeight.w400,
-                fontFamily: 'monospace',
+                fontFamily: 'brandontext',
                 color: textColor,
                 height: 0.70,
                 letterSpacing: 0,
@@ -2416,7 +2320,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
   Widget _buildContentBadgeWithBorder(int number, Color borderColor, LanguageProvider languageProvider) {
     final fontSize = widget.isTablet ? 12.0 : 10.0;
     final horizontalPadding = widget.isTablet ? 8.0 : 6.0;
-    final verticalPadding = widget.isTablet ? 3.0 : 2.0;
+    final verticalPadding = widget.isTablet ? 4.0 : 2.0;
 
     return Container(
       color: Colors.white,

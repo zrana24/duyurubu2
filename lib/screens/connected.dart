@@ -542,9 +542,28 @@ class BluetoothService {
             _sendNotification('✅ Seri bağlantı yeniden kuruldu', 'success');
           }
           catch (e) {
-            print('❌ Yeniden bağlantı hatası: $e');
-            _sendNotification('❌ Seri bağlantı yeniden kurulamadı', 'error');
+            print('Yeniden bağlantı hatası: $e');
+            _sendNotification('Seri bağlantı yeniden kurulamadı', 'error');
+            
+            _notificationController.add({
+              'message': 'navigate_to_connect',
+              'type': 'navigation',
+              'timestamp': DateTime.now(),
+            });
+
+            timer.cancel();
+            _handleDisconnection();
           }
+        }
+        else {
+          _notificationController.add({
+            'message': 'navigate_to_connect',
+            'type': 'navigation',
+            'timestamp': DateTime.now(),
+          });
+
+          timer.cancel();
+          _handleDisconnection();
         }
         return;
       }
@@ -555,6 +574,14 @@ class BluetoothService {
             print('⚠️ Bluetooth bağlantı kopmuş tespit edildi!');
             String deviceName = getDeviceDisplayName(_connectedDevice!);
             _sendNotification('🔌 Bağlantı kesildi: $deviceName', 'warning');
+
+            
+            _notificationController.add({
+              'message': 'navigate_to_connect',
+              'type': 'navigation',
+              'timestamp': DateTime.now(),
+            });
+
             timer.cancel();
             _handleDisconnection();
           }
@@ -587,6 +614,13 @@ class BluetoothService {
 
       _isConnectionActive = false;
       print('🔌 Serial bağlantı kapatıldı');
+
+      
+      _notificationController.add({
+        'message': 'navigate_to_connect',
+        'type': 'navigation',
+        'timestamp': DateTime.now(),
+      });
 
       await Future.delayed(Duration(milliseconds: 300));
     } catch (e) {
