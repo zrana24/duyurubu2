@@ -43,3 +43,8 @@ flutter:
       fonts:
         - asset: assets/fonts/brandontext-medium.ttf
           weight: 500
+
+    - family: digitalClock
+      fonts:
+        - asset: assets/fonts/DS-DIGI.ttf
+          weight: 400

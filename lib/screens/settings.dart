@@ -64,6 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
               width: double.infinity,
               child: ImageWidget(activePage: "settings"),
             ),
+            SizedBox(height: 10),
             Expanded(
               child: isTablet ? _buildTabletLayout() : _buildMobileLayout(),
             ),
@@ -83,8 +84,8 @@ class _SettingsPageState extends State<SettingsPage> {
         Expanded(
           child: Container(
             padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.05,
-              vertical: screenHeight * 0.02,
+              horizontal: screenWidth * 0.03,
+              vertical: screenHeight * 0.010,
             ),
             child: Column(
               children: [
@@ -122,7 +123,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     isMainScreen: true,
                   ),
                 ),
-                SizedBox(height: screenHeight * 0.02),
+                SizedBox(height: screenHeight * 0.005),
 
                 Expanded(
                   flex: 1,
@@ -155,7 +156,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     screenType: 'name',
                   ),
                 ),
-                SizedBox(height: screenHeight * 0.02),
+                SizedBox(height: screenHeight * 0.005),
 
                 Expanded(
                   flex: 1,
@@ -206,8 +207,8 @@ class _SettingsPageState extends State<SettingsPage> {
         Expanded(
           child: Container(
             padding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.03,
-              vertical: screenHeight * 0.02,
+              horizontal: screenWidth * 0.015,
+              vertical: screenHeight * 0.01,
             ),
             child: Column(
               children: [
@@ -250,7 +251,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           isMainScreen: true,
                         ),
                       ),
-                      SizedBox(width: screenWidth * 0.02),
+                      SizedBox(width: screenWidth * 0.015),
                       Expanded(
                         child: _buildScreenCard(
                           context,
@@ -278,7 +279,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           screenType: 'name',
                         ),
                       ),
-                      SizedBox(width: screenWidth * 0.02),
+                      SizedBox(width: screenWidth * 0.015),
                       Expanded(
                         child: _buildScreenCard(
                           context,
@@ -657,7 +658,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             horizontal: isTablet ? 6 : 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white
+                              color: Colors.white
                           ),
                           child: Text(
                             languageProvider.getTranslation('volume_level'),

@@ -114,6 +114,7 @@ class _ImageWidgetState extends State<ImageWidget> {
                   label: languageProvider.getTranslation('pairing') ?? "EŞLEŞTİRME",
                   isActive: isConnectPage,
                   onTap: () {
+                    _bluetooth.disconnect();
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => ConnectPage()),
@@ -161,7 +162,11 @@ class _ImageWidgetState extends State<ImageWidget> {
                   Expanded(
                     child: Text(
                       'Önce bir cihaza bağlanmalısınız!',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'brandontext',
+                      ),
                     ),
                   ),
                 ],
@@ -211,7 +216,7 @@ class _ImageWidgetState extends State<ImageWidget> {
                   fontSize: 12,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                   letterSpacing: 0.8,
-                  fontFamily: 'Roboto',
+                  fontFamily: 'brandontext',
                 ),
               ),
             ],

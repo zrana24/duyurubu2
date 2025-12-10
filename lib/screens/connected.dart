@@ -113,6 +113,7 @@ class BluetoothService {
       'message': message,
       'type': type,
       'timestamp': DateTime.now(),
+
     });
     print('📢 Bildirim: $message [$type]');
   }
@@ -452,6 +453,9 @@ class BluetoothService {
     }
   }
 
+
+
+
   Image imageFromBase64(String base64Str) {
     try {
       base64Str = base64Str.trim();
@@ -485,12 +489,13 @@ class BluetoothService {
   Function(BuildContext)? onSerialConnected;
 
   Future<void> connectToCsServer(String address) async {
-    if (_isConnectionActive && _connection != null && _connection!.isConnected) {
-      _sendNotification('Bağlantı aktif ', 'info');
-      return;
-    }
-
     try {
+      if (_isConnectionActive && _connection != null && _connection!.isConnected) {
+        print('serial kapat');
+        await _againCloseSerialConnect();
+        await Future.delayed(Duration(milliseconds: 1000));
+      }
+
       await Future.delayed(Duration(milliseconds: 500));
 
       print('📡 Serial bağlantı kuruluyor: $address');
@@ -502,7 +507,7 @@ class BluetoothService {
       }
 
       _isConnectionActive = true;
-      print('✅ Serial bağlantı kuruldu: $address');
+      print('Serial bağlantı kuruldu: $address');
 
       String deviceName = _connectedDevice != null
           ? getDeviceDisplayName(_connectedDevice!)
@@ -520,11 +525,45 @@ class BluetoothService {
       });
     }
     catch (e) {
-      print('❌ Serial bağlantı hatası: $e');
+      print('Serial bağlantı hatası: $e');
       _isConnectionActive = false;
       _connection = null;
-      _sendNotification('❌ Seri bağlantı kurulamadı', 'error');
+      _sendNotification('Seri bağlantı kurulamadı', 'error');
       rethrow;
+    }
+  }
+
+  Future<void> _againCloseSerialConnect() async {
+    try {
+      _connectionMonitorTimer?.cancel();
+      _connectionMonitorTimer = null;
+
+      if (_dataSubscription != null) {
+        await _dataSubscription!.cancel();
+        _dataSubscription = null;
+      }
+
+      if (_connection != null) {
+        try {
+          if (_connection!.isConnected) {
+            await _connection!.close();
+          }
+          _connection!.dispose();
+        } catch (e) {
+          print('Connection dispose hatası: $e');
+        }
+        _connection = null;
+      }
+
+      _isConnectionActive = false;
+      print('Serial bağlantı sessizce kapatıldı');
+
+      await Future.delayed(Duration(milliseconds: 300));
+    }
+    catch (e) {
+      print('⚠Serial bağlantı sessiz kapatma hatası: $e');
+      _connection = null;
+      _isConnectionActive = false;
     }
   }
 
@@ -691,18 +730,76 @@ class BluetoothService {
     }
   }
 
+
+
   Future<void> disconnect() async {
+    print('🔌 Tüm Bluetooth & serial bağlantıları sıfırlanıyor...');
+
+    // Otomatik periyodik taramayı durdur (yeniden başlatacağız)
+    _continuousScanTimer?.cancel();
+    _continuousScanTimer = null;
+
+    // O anda devam eden tarama varsa durdur
+    _stopScan();
+
+    // Bağlantı state dinleyicilerini iptal et
+    _connectionSubscription?.cancel();
+    _connectionSubscription = null;
+
+    _connectionMonitorTimer?.cancel();
+    _connectionMonitorTimer = null;
+
+    _scanSubscription?.cancel();
+    _scanSubscription = null;
+
+    // Serial bağlantıyı kapat (içeride _dataSubscription da iptal ediliyor)
+    await _closeSerialConnection();
+
+    // BLE cihaz bağlantısını kes
     if (_connectedDevice != null) {
       try {
-        String deviceName = getDeviceDisplayName(_connectedDevice!);
+        final deviceName = getDeviceDisplayName(_connectedDevice!);
         await _connectedDevice!.disconnect();
-        print('✅ Bağlantı kesildi: $deviceName');
+        print('✅ BLE bağlantısı kesildi: $deviceName');
       } catch (e) {
-        print('❌ Bağlantı kesme hatası: $e');
+        print('⚠️ BLE disconnect hatası (göz ardı): $e');
       }
     }
-    _handleDisconnection();
+
+    // --- TÜM BAĞLANTI İLGİLİ STATE'LERİ SIFIRLA ---
+
+    _connectedDevice = null;                 // Bağlı cihaz yok
+    connectedDeviceMacAddress = null;        // Static MAC bilgisi sıfır
+    _isConnecting = false;                   // Bağlanma süreci yok
+    _isScanning = false;                     // Şu an tarama yok
+    _connectionLocked = false;               // Kilit tamamen kaldırıldı
+    _isConnectionActive = false;             // Serial aktif değil
+    _connectionInputStream = null;           // Serial input stream temiz
+    _disconnectionNotificationSent = false;  // Bildirim flag sıfır
+    receivedVideoPath = null;                // Video path reset
+    _veriIsRunning = false;                  // veri() re-entrant flag reset
+
+    // Tarama sonuçlarını ve sinyal cache'ini temizle
+    _scanResults.clear();
+    _rssiValues.clear();
+    _scanResultsController.add(_scanResults);
+
+    // Ekrandaki bağlantı durumunu "disconnected" yap
+    _updateConnectionState(BluetoothServiceState.disconnected);
+
+    _sendNotification('🔄 Bağlantı sıfırlandı', 'info');
+
+    // İlk initializeBluetooth çağrısındaki gibi tekrar sürekli taramayı başlat
+    if (_bluetoothState == blue_plus.BluetoothAdapterState.on) {
+      _startContinuousScanning();
+    }
   }
+
+
+
+
+
+
 
   bool _disconnectionNotificationSent = false;
 
@@ -767,31 +864,34 @@ class BluetoothService {
 
   Future<void> playStatus({
     required int id,
-    required bool isPlaying,
     required String tip,
-  })async{
-
+  }) async {
     Map<String, dynamic> data = {};
 
-    if(tip == "isimlik"){
+    if (tip == "isimlik") {
       data = {
         "type": "play_isimlik",
-        "id":id,
-
+        "id": id,
       };
     }
-    else if(tip == "bilgi"){
+    else if (tip == "bilgi") {
       data = {
         "type": "play_bilgi",
-        "id":id,
+        "id": id,
       };
     }
-    else{
+    else {
       print("Tip veri hatası $tip");
+      return;
     }
 
     await sendDataToDevice(connectedDeviceMacAddress!, data);
-    print(data);
+
+    //dinleme alanı
+
+
+
+
   }
 
   Future<void> delete({
@@ -999,6 +1099,7 @@ class BluetoothService {
 
             if (response.containsKey('path')) {
               String? path = response['path'];
+              print("shshsh $path");
 
               _dataSubscription?.cancel();
               _dataSubscription = null;
@@ -1100,7 +1201,7 @@ class BluetoothService {
 
   Future<String> veri() async {
     if (_veriIsRunning) {
-      print("⚠️ veri() zaten çalışıyor, bekleniyor...");
+      print("veri() zaten çalışıyor, bekleniyor...");
       await Future.delayed(Duration(milliseconds: 500));
       return veri();
     }
@@ -1264,9 +1365,9 @@ class BluetoothService {
         "message": e.toString(),
         "data": null
       };
-
     }
   }
+
   Future<void> parlaklik({
     required String id,
     required String value,
