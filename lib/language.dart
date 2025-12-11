@@ -118,6 +118,7 @@ class LanguageProvider extends ChangeNotifier {
       'speaker_deleted_success': 'Konuşmacı başarıyla silindi',
       'content_deleted_success': 'İçerik başarıyla silindi',
       'error': 'Hata',
+      'cannot_edit_warning': 'Bu kayıt güncellenemez',
     },
     'en': {
       'name_screen': 'NAME SCREEN',

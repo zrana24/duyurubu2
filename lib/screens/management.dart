@@ -369,14 +369,19 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
         widget.cachedData!['isimlik'] is List) {
       List<dynamic> isimlikList = widget.cachedData!['isimlik'];
       setState(() {
-        _speakers = isimlikList.map((item) => {
-          'department': item['title'] ?? '',
-          'name': item['name'] ?? '',
-          'time': item['duration'] ?? '00:00:00',
-          'isEditing': false,
-          'isActive': item['is_active'] ?? false,
-          'toggle': item['toggle'] ?? false,
-          'isPlaying': widget.activeIndex == isimlikList.indexOf(item),
+        _speakers = isimlikList.map((item) {
+          int itemIndex = isimlikList.indexOf(item);
+          bool isActiveFromServer = item['is_active'] ?? false;
+
+          return {
+            'department': item['title'] ?? '',
+            'name': item['name'] ?? '',
+            'time': item['duration'] ?? '00:00:00',
+            'isEditing': false,
+            'isActive': isActiveFromServer,
+            'toggle': item['toggle'] ?? false,
+            'isPlaying': isActiveFromServer || (widget.activeIndex == itemIndex),
+          };
         }).toList();
         _isLoading = false;
       });
@@ -392,7 +397,8 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   void _updateSpeakersPlayState() {
     setState(() {
       for (int i = 0; i < _speakers.length; i++) {
-        _speakers[i]['isPlaying'] = widget.activeIndex == i;
+        bool isActiveFromServer = _speakers[i]['isActive'] as bool? ?? false;
+        _speakers[i]['isPlaying'] = (widget.activeIndex == i) || isActiveFromServer;
       }
     });
   }
@@ -483,6 +489,7 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
         duration: const Duration(seconds: 3),
       ));
     }
+    print(_speakers);
   }
 
   void _cancelEdit(int index) {
@@ -628,17 +635,30 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
 
       if (currentIsPlaying) {
         await _bluetoothService.playStatus(id: id, tip: tip);
+
+        setState(() {
+          _speakers[index]['isPlaying'] = false;
+        });
+
         widget.onActiveIndexChanged(null);
         managementState?._setActiveSpeakerIndex(null);
       }
       else {
-
         if (widget.activeIndex != null && widget.activeIndex != index) {
           int previousActiveSpeakerId = widget.activeIndex!;
           await _bluetoothService.playStatus(id: previousActiveSpeakerId, tip: tip);
+
+          setState(() {
+            _speakers[previousActiveSpeakerId]['isPlaying'] = false;
+          });
         }
 
         await _bluetoothService.playStatus(id: id, tip: tip);
+
+        setState(() {
+          _speakers[index]['isPlaying'] = true;
+        });
+
         widget.onActiveIndexChanged(index);
         managementState?._setActiveSpeakerIndex(index);
       }
@@ -653,7 +673,6 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       ));
     }
   }
-
 
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -698,21 +717,24 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                     ),
                   ),
                 ),
-                Text(
-                  languageProvider.getTranslation('name_screen_header'),
-                  style: TextStyle(
-                    fontSize: isTablet ? 16 : 12,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF1D7269),
-                    height: 0.7,
-                    fontFamily: 'brandontext',
+                Flexible(
+                  child: Text(
+                    languageProvider.getTranslation('name_screen_header'),
+                    style: TextStyle(
+                      fontSize: isTablet ? 16 : 12,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF1D7269),
+                      height: 0.7,
+                      fontFamily: 'brandontext',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                SizedBox(width: isTablet ? 190 : 180),
+                Spacer(),
                 GestureDetector(
                   onTap: _addNewSpeaker,
                   child: Container(
-                    margin: EdgeInsets.only(left: isTablet ? 17 : 15),
                     height: isTablet ? 28 : 24,
                     padding: EdgeInsets.symmetric(
                       horizontal: isTablet ? 10 : 6,
@@ -737,6 +759,8 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
                             height: 1.2,
                             fontFamily: 'brandontext',
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(width: isTablet ? 6 : 4),
                         Container(
@@ -883,7 +907,6 @@ class _ContentManagementState extends State<ContentManagement> {
         widget.cachedData!['bilgi'] is List) {
       List<dynamic> bilgiList = widget.cachedData!['bilgi'];
 
-
       setState(() {
         _contents = bilgiList.map((item) {
           Image? thumbnail = item['thumbnailImage'];
@@ -891,6 +914,9 @@ class _ContentManagementState extends State<ContentManagement> {
           if (title.trim().isEmpty) {
             title = Provider.of<LanguageProvider>(context, listen: false).getTranslation('meeting_topic');
           }
+
+          int itemIndex = bilgiList.indexOf(item);
+          bool buttonStatusFromServer = item['button_status'] ?? false;
 
           return {
             'title': title,
@@ -901,10 +927,10 @@ class _ContentManagementState extends State<ContentManagement> {
             'isEditing': false,
             'videoPath': item['path'] ?? '',
             'isActive': item['is_active'] ?? false,
-            'buttonStatus': item['button_status'] ?? false,
+            'buttonStatus': buttonStatusFromServer,
             'thumbnailBase64': item['thumbnailBase64'] ?? '',
             'thumbnail': thumbnail,
-            'isPlaying': widget.activeIndex == bilgiList.indexOf(item),
+            'isPlaying': buttonStatusFromServer || (widget.activeIndex == itemIndex),
           };
         }).toList();
         _isLoading = false;
@@ -922,7 +948,8 @@ class _ContentManagementState extends State<ContentManagement> {
   void _updateContentsPlayState() {
     setState(() {
       for (int i = 0; i < _contents.length; i++) {
-        _contents[i]['isPlaying'] = widget.activeIndex == i;
+        bool buttonStatusFromServer = _contents[i]['buttonStatus'] as bool? ?? false;
+        _contents[i]['isPlaying'] = (widget.activeIndex == i) || buttonStatusFromServer;
       }
     });
   }
@@ -1117,7 +1144,6 @@ class _ContentManagementState extends State<ContentManagement> {
                           ],
                         ),
                       ),
-
                     if (isCancelled)
                       Padding(
                         padding: const EdgeInsets.only(top: 16),
@@ -1467,6 +1493,12 @@ class _ContentManagementState extends State<ContentManagement> {
 
       if (currentIsPlaying) {
         await _bluetoothService.playStatus(id: id, tip: tip);
+
+        setState(() {
+          _contents[index]['isPlaying'] = false;
+          _contents[index]['buttonStatus'] = false;
+        });
+
         widget.onActiveIndexChanged(null);
         managementState?._setActiveContentIndex(null);
       }
@@ -1474,9 +1506,20 @@ class _ContentManagementState extends State<ContentManagement> {
         if (widget.activeIndex != null && widget.activeIndex != index) {
           int previousActiveContentId = widget.activeIndex!;
           await _bluetoothService.playStatus(id: previousActiveContentId, tip: tip);
+
+          setState(() {
+            _contents[previousActiveContentId]['isPlaying'] = false;
+            _contents[previousActiveContentId]['buttonStatus'] = false;
+          });
         }
 
         await _bluetoothService.playStatus(id: id, tip: tip);
+
+        setState(() {
+          _contents[index]['isPlaying'] = true;
+          _contents[index]['buttonStatus'] = true;
+        });
+
         widget.onActiveIndexChanged(index);
         managementState?._setActiveContentIndex(index);
       }
@@ -1535,22 +1578,25 @@ class _ContentManagementState extends State<ContentManagement> {
                     ),
                   ),
                 ),
-                Text(
-                  languageProvider.getTranslation('info_screen_header'),
-                  style: TextStyle(
-                    fontSize: isTablet ? 16 : 12,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF1D7269),
-                    height: 0.7,
-                    fontFamily: 'brandontext',
+                Flexible(
+                  child: Text(
+                    languageProvider.getTranslation('info_screen_header'),
+                    style: TextStyle(
+                      fontSize: isTablet ? 16 : 12,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF1D7269),
+                      height: 0.7,
+                      fontFamily: 'brandontext',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                SizedBox(width: isTablet ? 190 : 180),
+                Spacer(),
                 if (screenWidth > 400)
                   GestureDetector(
                     onTap: _addNewContent,
                     child: Container(
-                      margin: EdgeInsets.only(left: isTablet ? 17 : 15),
                       height: isTablet ? 28 : 24,
                       padding: EdgeInsets.symmetric(
                         horizontal: isTablet ? 10 : 6,
@@ -1566,19 +1612,19 @@ class _ContentManagementState extends State<ContentManagement> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (screenWidth > 400)
-                            Text(
-                              languageProvider.getTranslation('add_content_btn'),
-                              style: TextStyle(
-                                fontSize: isTablet ? 13.5 : 11,
-                                fontWeight: FontWeight.w400,
-                                color: const Color(0xFF0D7066),
-                                height: 0.92,
-                                fontFamily: 'brandontext',
-                              ),
+                          Text(
+                            languageProvider.getTranslation('add_content_btn'),
+                            style: TextStyle(
+                              fontSize: isTablet ? 13.5 : 11,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF0D7066),
+                              height: 0.92,
+                              fontFamily: 'brandontext',
                             ),
-                          if (screenWidth > 400) SizedBox(width: isTablet ? 8
-                              : 6),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(width: isTablet ? 8 : 6),
                           Container(
                             width: isTablet ? 16 : 13,
                             height: isTablet ? 16 : 13,
@@ -1725,7 +1771,9 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     _timeFocusNode = FocusNode();
     _currentTime = widget.speaker['time'] as String? ?? '00:00:00';
     _isSwitchActive = widget.speaker['toggle'] as bool? ?? false;
-    _isPlaying = widget.isPlaying;
+
+    bool isActiveFromServer = widget.speaker['isActive'] as bool? ?? false;
+    _isPlaying = isActiveFromServer || widget.isPlaying;
 
     _timeFocusNode?.addListener(() {
       if (_timeFocusNode!.hasFocus && _timeController.text.isNotEmpty) {
@@ -1771,6 +1819,21 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     _timeController.dispose();
     _timeFocusNode?.dispose();
     super.dispose();
+  }
+
+  void _showCannotEditWarning() {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          languageProvider.getTranslation('cannot_edit_warning') ?? 'Bu kayıt güncellenemez',
+          style: TextStyle(fontFamily: 'brandontext'),
+        ),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   void _startCountdown() {
@@ -1927,138 +1990,147 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                _buildImageIcon('assets/images/icerik.png', widget.isTablet ? 18 : 16, widget.isTablet ? 16 : 14),
-                SizedBox(width: widget.isTablet ? 6.0 : 4.0),
-                Expanded(
-                  child: _isEditing
-                      ? TextField(
-                    controller: _departmentController,
-                    maxLength: 35,
-                    onTap: () {
-                      if (_departmentController.text == widget.speaker['department']) {
-                        _departmentController.clear();
-                      }
-                    },
-                    onChanged: (value) {
-                      setState(() {});
-                    },
-                    style: TextStyle(
-                      fontSize: widget.isTablet ? 17.0 : 15,
-                      fontWeight: FontWeight.w400,
-                      color: _departmentController.text == widget.speaker['department']
-                          ? Colors.grey[600]
-                          : (borderColor == const Color(0xFF5E6676)
-                          ? const Color(0xFF000000)
-                          : const Color(0xFFA24D00)),
-                      height: 0.94,
-                      fontFamily: 'brandontext',
+            GestureDetector(
+              onTap: !_isEditing ? _showCannotEditWarning : null,
+              child: Row(
+                children: [
+                  _buildImageIcon('assets/images/icerik.png', widget.isTablet ? 18 : 16, widget.isTablet ? 16 : 14),
+                  SizedBox(width: widget.isTablet ? 6.0 : 4.0),
+                  Expanded(
+                    child: _isEditing
+                        ? TextField(
+                      controller: _departmentController,
+                      maxLength: 35,
+                      onTap: () {
+                        if (_departmentController.text == widget.speaker['department']) {
+                          _departmentController.clear();
+                        }
+                      },
+                      onChanged: (value) {
+                        setState(() {});
+                      },
+                      style: TextStyle(
+                        fontSize: widget.isTablet ? 17.0 : 15,
+                        fontWeight: FontWeight.w400,
+                        color: _departmentController.text == widget.speaker['department']
+                            ? Colors.grey[600]
+                            : (borderColor == const Color(0xFF5E6676)
+                            ? const Color(0xFF000000)
+                            : const Color(0xFFA24D00)),
+                        height: 0.94,
+                        fontFamily: 'brandontext',
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        counterText: '',
+                      ),
+                    )
+                        : Text(
+                      widget.speaker['department'] as String,
+                      style: TextStyle(
+                        fontSize: widget.isTablet ? 17.0 : 15,
+                        fontWeight: FontWeight.w400,
+                        color: borderColor == const Color(0xFF5E6676)
+                            ? const Color(0xFF414A5D)
+                            : const Color(0xFFA24D00),
+                        height: 0.94,
+                        fontFamily: 'brandontext',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      counterText: '',
-                    ),
-                  )
-                      : Text(
-                    widget.speaker['department'] as String,
-                    style: TextStyle(
-                      fontSize: widget.isTablet ? 17.0 : 15,
-                      fontWeight: FontWeight.w400,
-                      color: borderColor == const Color(0xFF5E6676)
-                          ? const Color(0xFF414A5D)
-                          : const Color(0xFFA24D00),
-                      height: 0.94,
-                      fontFamily: 'brandontext',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                if (_isEditing) ...[
-                  SizedBox(width: widget.isTablet ? 8.0 : 6.0),
-                  _buildCharacterCounter(_departmentController.text.length),
+                  if (_isEditing) ...[
+                    SizedBox(width: widget.isTablet ? 8.0 : 6.0),
+                    _buildCharacterCounter(_departmentController.text.length),
+                  ],
                 ],
-              ],
+              ),
             ),
             SizedBox(height: widget.isTablet ? 1 : 0.5),
-            Row(
-              children: [
-                _buildImageIcon('assets/images/konusmaci.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
-                SizedBox(width: widget.isTablet ? 6.0 : 4.0),
-                Expanded(
-                  child: _isEditing
-                      ? TextField(
-                    controller: _nameController,
-                    maxLength: 35,
-                    onTap: () {
-                      if (_nameController.text == widget.speaker['name']) {
-                        _nameController.clear();
-                      }
-                    },
-                    onChanged: (value) {
-                      setState(() {});
-                    },
-                    style: TextStyle(
-                      fontSize: widget.isTablet ? 17.0 : 15,
-                      fontWeight: FontWeight.w400,
-                      color: _nameController.text == widget.speaker['name']
-                          ? Colors.grey[600]
-                          : (borderColor == const Color(0xFF5E6676)
-                          ? const Color(0xFF000000)
-                          : const Color(0xFFA24D00)),
-                      height: 0.94,
-                      fontFamily: 'brandontext',
+            GestureDetector(
+              onTap: !_isEditing ? _showCannotEditWarning : null,
+              child: Row(
+                children: [
+                  _buildImageIcon('assets/images/konusmaci.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
+                  SizedBox(width: widget.isTablet ? 6.0 : 4.0),
+                  Expanded(
+                    child: _isEditing
+                        ? TextField(
+                      controller: _nameController,
+                      maxLength: 35,
+                      onTap: () {
+                        if (_nameController.text == widget.speaker['name']) {
+                          _nameController.clear();
+                        }
+                      },
+                      onChanged: (value) {
+                        setState(() {});
+                      },
+                      style: TextStyle(
+                        fontSize: widget.isTablet ? 17.0 : 15,
+                        fontWeight: FontWeight.w400,
+                        color: _nameController.text == widget.speaker['name']
+                            ? Colors.grey[600]
+                            : (borderColor == const Color(0xFF5E6676)
+                            ? const Color(0xFF000000)
+                            : const Color(0xFFA24D00)),
+                        height: 0.94,
+                        fontFamily: 'brandontext',
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        counterText: '',
+                      ),
+                    )
+                        : Text(
+                      widget.speaker['name'] as String,
+                      style: TextStyle(
+                        fontSize: widget.isTablet ? 17.0 : 15,
+                        fontWeight: FontWeight.w400,
+                        color: borderColor == const Color(0xFF5E6676)
+                            ? const Color(0xFF414A5D)
+                            : const Color(0xFFA24D00),
+                        height: 0.94,
+                        fontFamily: 'brandontext',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      counterText: '',
-                    ),
-                  )
-                      : Text(
-                    widget.speaker['name'] as String,
-                    style: TextStyle(
-                      fontSize: widget.isTablet ? 17.0 : 15,
-                      fontWeight: FontWeight.w400,
-                      color: borderColor == const Color(0xFF5E6676)
-                          ? const Color(0xFF414A5D)
-                          : const Color(0xFFA24D00),
-                      height: 0.94,
-                      fontFamily: 'brandontext',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                if (_isEditing) ...[
-                  SizedBox(width: widget.isTablet ? 8.0 : 6.0),
-                  _buildCharacterCounter(_nameController.text.length),
+                  if (_isEditing) ...[
+                    SizedBox(width: widget.isTablet ? 8.0 : 6.0),
+                    _buildCharacterCounter(_nameController.text.length),
+                  ],
                 ],
-              ],
+              ),
             ),
             SizedBox(height: widget.isTablet ? 1 : 0.5),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    _buildImageIcon('assets/images/saat.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
-                    SizedBox(width: widget.isTablet ? 6.0 : 4.0),
-                    _buildDigitalTime(
-                      _currentTime,
-                      borderColor == const Color(0xFF5E6676)
-                          ? const Color(0xFF3B4458)
-                          : const Color(0xFFA24D00),
-                      widget.isTablet,
-                      _isEditing,
-                      _isEditing ? _timeController : null,
-                      _isEditing ? _timeFocusNode : null,
-                    ),
-                  ],
+                GestureDetector(
+                  onTap: !_isEditing ? _showCannotEditWarning : null,
+                  child: Row(
+                    children: [
+                      _buildImageIcon('assets/images/saat.png', widget.isTablet ? 18 : 16, widget.isTablet ? 20 : 18),
+                      SizedBox(width: widget.isTablet ? 6.0 : 4.0),
+                      _buildDigitalTime(
+                        _currentTime,
+                        borderColor == const Color(0xFF5E6676)
+                            ? const Color(0xFF3B4458)
+                            : const Color(0xFFA24D00),
+                        widget.isTablet,
+                        _isEditing,
+                        _isEditing ? _timeController : null,
+                        _isEditing ? _timeFocusNode : null,
+                      ),
+                    ],
+                  ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -2066,8 +2138,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
                     Container(
                       width: widget.isTablet ? 18 : 16,
                       height: widget.isTablet ? 18 : 16,
-                      margin: EdgeInsets.only(right: widget.isTablet ? 12.0 :
-                      10.0),
+                      margin: EdgeInsets.only(right: widget.isTablet ? 12.0 : 10.0),
                       child: Image.asset(
                         'assets/images/zamanlayici-yesil.png',
                         fit: BoxFit.contain,
@@ -2156,7 +2227,7 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
   Widget _buildToggleSwitch() {
     return GestureDetector(
       key: ValueKey(widget.index),
-      onTap: _isEditing ? _toggleSwitch : null,
+      onTap: _isEditing ? _toggleSwitch : _showCannotEditWarning,
       child: Container(
         width: widget.isTablet ? 30 : 26,
         height: widget.isTablet ? 14 : 12,
@@ -2407,22 +2478,22 @@ class _EditableContentCardState extends State<EditableContentCard> {
   @override
   void initState() {
     super.initState();
-    _titleController =
-        TextEditingController(text: widget.content['title'] as String);
-    _startTimeController =
-        TextEditingController(text: widget.content['startTime'] as String);
-    _endTimeController =
-        TextEditingController(text: widget.content['endTime'] as String);
+    _titleController = TextEditingController(text: widget.content['title'] as String);
+    _startTimeController = TextEditingController(text: widget.content['startTime'] as String);
+    _endTimeController = TextEditingController(text: widget.content['endTime'] as String);
     _startTimeFocusNode = FocusNode();
     _endTimeFocusNode = FocusNode();
 
     _isSwitchActive = widget.isActive;
-    _isPlaying = widget.isPlaying;
-    print(' index ${widget.index}');
+
+    bool buttonStatusFromServer = widget.content['buttonStatus'] as bool? ?? false;
+    _isPlaying = buttonStatusFromServer || widget.isPlaying;
+
+    print('Content index ${widget.index} - buttonStatus: $buttonStatusFromServer, isPlaying: $_isPlaying');
+
 
     _startTimeFocusNode?.addListener(() {
-      if (_startTimeFocusNode!.hasFocus &&
-          _startTimeController.text.isNotEmpty) {
+      if (_startTimeFocusNode!.hasFocus && _startTimeController.text.isNotEmpty) {
         _startTimeController.clear();
       }
     });
@@ -2440,6 +2511,21 @@ class _EditableContentCardState extends State<EditableContentCard> {
     _endTimeController.addListener(() {
       _formatTimeInput(_endTimeController);
     });
+  }
+
+  void _showCannotEditWarning() {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          languageProvider.getTranslation('cannot_edit_warning') ?? 'Bu kayıt güncellenemez',
+          style: TextStyle(fontFamily: 'brandontext'),
+        ),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -2713,9 +2799,8 @@ class _EditableContentCardState extends State<EditableContentCard> {
         ),
         child: Row(
           children: [
-            _isEditing
-                ? GestureDetector(
-              onTap: widget.onFilePick,
+            GestureDetector(
+              onTap: !_isEditing ? _showCannotEditWarning : widget.onFilePick,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
@@ -2732,22 +2817,6 @@ class _EditableContentCardState extends State<EditableContentCard> {
                   child: _buildFilePreview(),
                 ),
               ),
-            )
-                : ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: widget.isTablet ? 90 : 80,
-                height: widget.isTablet ? 100 : 90,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(7),
-                  border: Border.all(
-                    color: const Color(0xFFE0E0E0),
-                    width: 0.5,
-                  ),
-                ),
-                child: _buildFilePreview(),
-              ),
             ),
             SizedBox(width: widget.isTablet ? 10.0 : 8.0),
             Expanded(
@@ -2755,113 +2824,119 @@ class _EditableContentCardState extends State<EditableContentCard> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildImageIcon(
-                        'assets/images/icerik.png',
-                        widget.isTablet ? 18 : 16,
-                        widget.isTablet ? 16 : 14,
-                      ),
-                      SizedBox(width: widget.isTablet ? 6.0 : 5.0),
-                      Expanded(
-                        child: _isEditing
-                            ? TextField(
-                          controller: _titleController,
-                          maxLength: 70,
-                          maxLines: 2,
-                          onTap: () {
-                            if (_titleController.text == widget.content['title']) {
-                              _titleController.clear();
-                            }
-                          },
-                          onChanged: (value) {
-                            setState(() {});
-                          },
-                          style: TextStyle(
-                            fontSize: widget.isTablet ? 17.0 : 15,
-                            fontWeight: FontWeight.w400,
-                            color: _titleController.text == widget.content['title']
-                                ? Colors.grey[600]
-                                : (borderColor == const Color(0xFF5E6676)
-                                ? const Color(0xFF000000)
-                                : const Color(0xFFA24D00)),
-                            height: 0.94,
-                            fontFamily: 'brandontext',
-                          ),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            counterText: '',
-                          ),
-                        )
-                            : Text(
-                          widget.content['title'] as String,
-                          style: TextStyle(
-                            fontSize: widget.isTablet ? 17.0 : 15,
-                            fontWeight: FontWeight.w400,
-                            color: borderColor == const Color(0xFF5E6676)
-                                ? const Color(0xFF414A5D)
-                                : const Color(0xFFA24D00),
-                            height: 0.94,
-                            fontFamily: 'brandontext',
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                  GestureDetector(
+                    onTap: !_isEditing ? _showCannotEditWarning : null,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildImageIcon(
+                          'assets/images/icerik.png',
+                          widget.isTablet ? 18 : 16,
+                          widget.isTablet ? 16 : 14,
                         ),
-                      ),
-                      if (_isEditing) ...[
-                        SizedBox(width: widget.isTablet ? 8.0 : 6.0),
-                        _buildCharacterCounter(_titleController.text.length),
+                        SizedBox(width: widget.isTablet ? 6.0 : 5.0),
+                        Expanded(
+                          child: _isEditing
+                              ? TextField(
+                            controller: _titleController,
+                            maxLength: 70,
+                            maxLines: 2,
+                            onTap: () {
+                              if (_titleController.text == widget.content['title']) {
+                                _titleController.clear();
+                              }
+                            },
+                            onChanged: (value) {
+                              setState(() {});
+                            },
+                            style: TextStyle(
+                              fontSize: widget.isTablet ? 17.0 : 15,
+                              fontWeight: FontWeight.w400,
+                              color: _titleController.text == widget.content['title']
+                                  ? Colors.grey[600]
+                                  : (borderColor == const Color(0xFF5E6676)
+                                  ? const Color(0xFF000000)
+                                  : const Color(0xFFA24D00)),
+                              height: 0.94,
+                              fontFamily: 'brandontext',
+                            ),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              counterText: '',
+                            ),
+                          )
+                              : Text(
+                            widget.content['title'] as String,
+                            style: TextStyle(
+                              fontSize: widget.isTablet ? 17.0 : 15,
+                              fontWeight: FontWeight.w400,
+                              color: borderColor == const Color(0xFF5E6676)
+                                  ? const Color(0xFF414A5D)
+                                  : const Color(0xFFA24D00),
+                              height: 0.94,
+                              fontFamily: 'brandontext',
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (_isEditing) ...[
+                          SizedBox(width: widget.isTablet ? 8.0 : 6.0),
+                          _buildCharacterCounter(_titleController.text.length),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                   SizedBox(height: widget.isTablet ? 40.0 : 36.0),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          _buildImageIcon(
-                            'assets/images/saat.png',
-                            widget.isTablet ? 18 : 16,
-                            widget.isTablet ? 20 : 18,
-                          ),
-                          SizedBox(width: widget.isTablet ? 4.0 : 2.0),
-                          _buildDigitalTime(
-                            widget.content['startTime'] as String,
-                            borderColor == const Color(0xFF5E6676)
-                                ? const Color(0xFF3B4458)
-                                : const Color(0xFFA24D00),
-                            widget.isTablet,
-                            _isEditing,
-                            _isEditing ? _startTimeController : null,
-                            _isEditing ? _startTimeFocusNode : null,
-                          ),
-                          Text(
-                            '-',
-                            style: TextStyle(
-                              fontSize: widget.isTablet ? 10.0 : 8.0,
-                              fontWeight: FontWeight.w400,
-                              color: borderColor == const Color(0xFF5E6676)
+                      GestureDetector(
+                        onTap: !_isEditing ? _showCannotEditWarning : null,
+                        child: Row(
+                          children: [
+                            _buildImageIcon(
+                              'assets/images/saat.png',
+                              widget.isTablet ? 18 : 16,
+                              widget.isTablet ? 20 : 18,
+                            ),
+                            SizedBox(width: widget.isTablet ? 4.0 : 2.0),
+                            _buildDigitalTime(
+                              widget.content['startTime'] as String,
+                              borderColor == const Color(0xFF5E6676)
                                   ? const Color(0xFF3B4458)
                                   : const Color(0xFFA24D00),
-                              fontFamily: 'digitalClock',
+                              widget.isTablet,
+                              _isEditing,
+                              _isEditing ? _startTimeController : null,
+                              _isEditing ? _startTimeFocusNode : null,
                             ),
-                          ),
-                          SizedBox(width: widget.isTablet ? 4.0 : 2.0),
-                          _buildDigitalTime(
-                            widget.content['endTime'] as String,
-                            borderColor == const Color(0xFF5E6676)
-                                ? const Color(0xFF3B4458)
-                                : const Color(0xFFA24D00),
-                            widget.isTablet,
-                            _isEditing,
-                            _isEditing ? _endTimeController : null,
-                            _isEditing ? _endTimeFocusNode : null,
-                          ),
-                        ],
+                            Text(
+                              '-',
+                              style: TextStyle(
+                                fontSize: widget.isTablet ? 10.0 : 8.0,
+                                fontWeight: FontWeight.w400,
+                                color: borderColor == const Color(0xFF5E6676)
+                                    ? const Color(0xFF3B4458)
+                                    : const Color(0xFFA24D00),
+                                fontFamily: 'digitalClock',
+                              ),
+                            ),
+                            SizedBox(width: widget.isTablet ? 4.0 : 2.0),
+                            _buildDigitalTime(
+                              widget.content['endTime'] as String,
+                              borderColor == const Color(0xFF5E6676)
+                                  ? const Color(0xFF3B4458)
+                                  : const Color(0xFFA24D00),
+                              widget.isTablet,
+                              _isEditing,
+                              _isEditing ? _endTimeController : null,
+                              _isEditing ? _endTimeFocusNode : null,
+                            ),
+                          ],
+                        ),
                       ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -2869,8 +2944,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
                           Container(
                             width: widget.isTablet ? 18 : 16,
                             height: widget.isTablet ? 18 : 16,
-                            margin: EdgeInsets.only(right: widget.isTablet ?
-                            10.0 : 8.0),
+                            margin: EdgeInsets.only(right: widget.isTablet ? 10.0 : 8.0),
                             child: Image.asset(
                               'assets/images/toggle-icon-1.png',
                               fit: BoxFit.contain,
@@ -2897,7 +2971,7 @@ class _EditableContentCardState extends State<EditableContentCard> {
           _isSwitchActive = !_isSwitchActive;
         });
         widget.onToggleChange(_isSwitchActive);
-      } : null,
+      } : _showCannotEditWarning,
       child: Container(
         width: widget.isTablet ? 30 : 26,
         height: widget.isTablet ? 14 : 12,
