@@ -33,33 +33,26 @@ class BluetoothService {
   bool _isScanning = false;
   bool _connectionLocked = false;
 
-
   Map<String, int?> _rssiValues = {};
   List<bluetooth_serial.BluetoothDevice> _bondedDevicesList = [];
   Map<String, String> _deviceNamesCache = {};
 
-
   List<Map<String, dynamic>> _isimlikList = [];
-
 
   final _bluetoothStateController = StreamController<blue_plus.BluetoothAdapterState>.broadcast();
   final _connectionStateController = StreamController<BluetoothServiceState>.broadcast();
   final _devicesController = StreamController<List<blue_plus.BluetoothDevice>>.broadcast();
   final _scanResultsController = StreamController<List<blue_plus.ScanResult>>.broadcast();
 
-
   final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
-
 
   bluetooth_serial.BluetoothConnection? _connection;
   bool _isConnectionActive = false;
   StreamSubscription<Uint8List>? _dataSubscription;
   final _incomingDataController = StreamController<String>.broadcast();
 
-
   String? receivedVideoPath;
-
-
+  String? durum;
   blue_plus.BluetoothAdapterState get bluetoothState => _bluetoothState;
   List<blue_plus.BluetoothDevice> get pairedDevices => _pairedDevicesList;
   List<blue_plus.BluetoothDevice> get nearbyDevices => _scanResults.map((r) => r.device).toList();
@@ -70,6 +63,8 @@ class BluetoothService {
   bool get isConnected => _connectedDevice != null && !_isConnecting && _isConnectionActive;
   Map<String, int?> get rssiValues => _rssiValues;
   List<Map<String, dynamic>> get isimlikList => _isimlikList;
+
+  bool get _hasActiveSerial => _isConnectionActive && _connection != null && _connection!.isConnected;
 
   List<String> get connectedDevicesMacAddresses {
     return _pairedDevicesList
@@ -93,13 +88,11 @@ class BluetoothService {
         _instance._connection!.isConnected;
   }
 
-
   Stream<blue_plus.BluetoothAdapterState> get bluetoothStateStream => _bluetoothStateController.stream;
   Stream<BluetoothServiceState> get connectionStateStream => _connectionStateController.stream;
   Stream<List<blue_plus.BluetoothDevice>> get devicesStream => _devicesController.stream;
   Stream<List<blue_plus.ScanResult>> get scanResultsStream => _scanResultsController.stream;
   Stream<String> get incomingDataStream => _incomingDataController.stream;
-
 
   Stream<Map<String, dynamic>> get notificationStream => _notificationController.stream;
 
@@ -107,13 +100,11 @@ class BluetoothService {
   StreamSubscription<blue_plus.BluetoothConnectionState>? _connectionSubscription;
   Timer? _continuousScanTimer;
 
-
   void _sendNotification(String message, String type) {
     _notificationController.add({
       'message': message,
       'type': type,
       'timestamp': DateTime.now(),
-
     });
     print('📢 Bildirim: $message [$type]');
   }
@@ -133,7 +124,6 @@ class BluetoothService {
       return false;
     }
   }
-
 
   Future<void> initializeBluetooth() async {
     try {
@@ -173,7 +163,6 @@ class BluetoothService {
     }
   }
 
-
   Future<void> _getBondedDevices() async {
     try {
       List<bluetooth_serial.BluetoothDevice> bondedDevices = await bluetooth_serial.FlutterBluetoothSerial.instance.getBondedDevices();
@@ -202,7 +191,6 @@ class BluetoothService {
     }
   }
 
-
   Future<void> _getPairedDevices() async {
     try {
       List<blue_plus.BluetoothDevice> connectedDevices = await blue_plus.FlutterBluePlus.connectedDevices;
@@ -224,22 +212,31 @@ class BluetoothService {
     }
   }
 
-
   void _startContinuousScanning() {
     _continuousScanTimer?.cancel();
-    _continuousScanTimer = Timer.periodic(Duration(seconds: 30), (_) async {
-      if (_bluetoothState != blue_plus.BluetoothAdapterState.on || _isConnecting) return;
+
+    _continuousScanTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (_bluetoothState != blue_plus.BluetoothAdapterState.on ||
+          _isConnecting ||
+          _hasActiveSerial ||
+          _connectedDevice != null) {
+        return;
+      }
 
       if (!_isScanning) {
         startScan();
-        Future.delayed(Duration(seconds: 10), _stopScan);
+        Future.delayed(const Duration(seconds: 10), _stopScan);
       }
     });
   }
 
-
   void startScan() {
-    if (_isScanning || _bluetoothState != blue_plus.BluetoothAdapterState.on || _isConnecting) {
+    if (_isScanning ||
+        _bluetoothState != blue_plus.BluetoothAdapterState.on ||
+        _isConnecting ||
+        _hasActiveSerial ||
+        _connectedDevice != null) {
+      print('🔎 Scan iptal: aktif bağlantı veya işlem var');
       return;
     }
 
@@ -270,7 +267,7 @@ class BluetoothService {
     });
 
     blue_plus.FlutterBluePlus.startScan(
-      timeout: Duration(seconds: 10),
+      timeout: const Duration(seconds: 10),
       androidUsesFineLocation: false,
     );
   }
@@ -282,7 +279,6 @@ class BluetoothService {
       _isScanning = false;
     }
   }
-
 
   String getDeviceDisplayName(blue_plus.BluetoothDevice device) {
     String deviceId = device.remoteId.str;
@@ -308,13 +304,13 @@ class BluetoothService {
       if (existingResult.advertisementData.advName.isNotEmpty) {
         return existingResult.advertisementData.advName;
       }
-    } catch (e) {
-
+    }
+    catch (e) {
+      print(e);
     }
 
     return deviceId.length > 8 ? '${deviceId.substring(0, 8)}...' : deviceId;
   }
-
 
   Future<void> connectToDevice(blue_plus.BluetoothDevice device, {int maxRetries = 3}) async {
     if (_isConnecting) {
@@ -344,20 +340,18 @@ class BluetoothService {
           print('🔗 $deviceName cihazına bağlanılıyor...');
         }
 
-
         try {
           await device.disconnect();
-          await Future.delayed(Duration(milliseconds: 1000));
+          await Future.delayed(const Duration(milliseconds: 1000));
         } catch (e) {
           print('⚠️ Disconnect hatası (göz ardı ediliyor): $e');
-          await Future.delayed(Duration(milliseconds: 1000));
+          await Future.delayed(const Duration(milliseconds: 1000));
         }
 
         final adapterState = await blue_plus.FlutterBluePlus.adapterState.first;
         if (adapterState != blue_plus.BluetoothAdapterState.on) {
           throw Exception('Bluetooth adaptörü kapalı');
         }
-
 
         final currentConnectionState = await device.connectionState.first;
         if (currentConnectionState == blue_plus.BluetoothConnectionState.connected) {
@@ -367,32 +361,30 @@ class BluetoothService {
           _isConnecting = false;
           _updateConnectionState(BluetoothServiceState.connected);
           _stopScan();
+          _continuousScanTimer?.cancel();
           _monitorConnectionState(device);
-
 
           await connectToCsServer(device.remoteId.str);
           return;
         }
 
-
-        await device.connect(autoConnect: false, timeout: Duration(seconds: 15)).timeout(
-          Duration(seconds: 20),
+        await device
+            .connect(autoConnect: false, timeout: const Duration(seconds: 15))
+            .timeout(
+          const Duration(seconds: 20),
           onTimeout: () {
-            throw TimeoutException('Bağlantı zaman aşımına uğradı', Duration(seconds: 20));
+            throw TimeoutException('Bağlantı zaman aşımına uğradı', const Duration(seconds: 20));
           },
         );
 
-
-        await Future.delayed(Duration(milliseconds: 1000));
+        await Future.delayed(const Duration(milliseconds: 1000));
         final connectionState = await device.connectionState.first;
 
         if (connectionState != blue_plus.BluetoothConnectionState.connected) {
           throw Exception('Bağlantı kurulamadı. Durum: $connectionState');
         }
 
-
         await discoverServicesAfterConnection(device);
-
 
         _connectedDevice = device;
         _connectionLocked = true;
@@ -405,6 +397,7 @@ class BluetoothService {
         }
 
         _stopScan();
+        _continuousScanTimer?.cancel();
         _monitorConnectionState(device);
 
         connectedDeviceMacAddress = device.remoteId.str;
@@ -423,14 +416,14 @@ class BluetoothService {
 
         if (isError133 && retryCount < maxRetries) {
           print('⚠️ Error 133 tespit edildi, ek bekleme...');
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
         }
 
         if (retryCount < maxRetries) {
           retryCount++;
           try {
             await device.disconnect();
-            await Future.delayed(Duration(milliseconds: 1000));
+            await Future.delayed(const Duration(milliseconds: 1000));
           } catch (_) {}
           continue;
         } else {
@@ -453,9 +446,6 @@ class BluetoothService {
     }
   }
 
-
-
-
   Image imageFromBase64(String base64Str) {
     try {
       base64Str = base64Str.trim();
@@ -471,13 +461,12 @@ class BluetoothService {
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           print('❌ Image memory hatası: $error');
-          return Icon(Icons.broken_image, color: Colors.grey);
+          return const Icon(Icons.broken_image, color: Colors.grey);
         },
       );
     } catch (e) {
       print('❌ imageFromBase64 hatası: $e');
-      print('❌ Hatalı base64 string: ${base64Str.substring(0, math.min(100,
-          base64Str.length))}');
+      print('❌ Hatalı base64 string: ${base64Str.substring(0, math.min(100, base64Str.length))}');
       rethrow;
     }
   }
@@ -493,42 +482,44 @@ class BluetoothService {
       if (_isConnectionActive && _connection != null && _connection!.isConnected) {
         print('serial kapat');
         await _againCloseSerialConnect();
-        await Future.delayed(Duration(milliseconds: 1000));
+        await Future.delayed(const Duration(milliseconds: 1000));
       }
 
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 500));
 
       print('📡 Serial bağlantı kuruluyor: $address');
       _connection = await bluetooth_serial.BluetoothConnection.toAddress(address);
-      _connectionInputStream ??= _connection!.input!.asBroadcastStream();
+      _connectionInputStream = _connection!.input!.asBroadcastStream();
 
       if (_connection == null) {
         throw Exception('Bağlantı nesnesi null');
       }
 
       _isConnectionActive = true;
-      print('Serial bağlantı kuruldu: $address');
+      print('✅ Serial bağlantı kuruldu: $address');
 
-      String deviceName = _connectedDevice != null
-          ? getDeviceDisplayName(_connectedDevice!)
-          : 'Cihaz';
+      _stopScan();
+      _continuousScanTimer?.cancel();
+      _continuousScanTimer = null;
+
+      String deviceName = _connectedDevice != null ? getDeviceDisplayName(_connectedDevice!) : 'Cihaz';
       _sendNotification('✅ $deviceName ile seri bağlantı kuruldu', 'success');
 
       _startConnectionMonitoring();
 
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 500));
 
       _notificationController.add({
         'message': 'navigate_to_management',
         'type': 'navigation',
         'timestamp': DateTime.now(),
       });
-    }
-    catch (e) {
-      print('Serial bağlantı hatası: $e');
+    } catch (e) {
+      print('❌ Serial bağlantı hatası: $e');
       _isConnectionActive = false;
       _connection = null;
-      _sendNotification('Seri bağlantı kurulamadı', 'error');
+      _connectionInputStream = null;
+      _sendNotification('❌ Seri bağlantı kurulamadı', 'error');
       rethrow;
     }
   }
@@ -550,19 +541,21 @@ class BluetoothService {
           }
           _connection!.dispose();
         } catch (e) {
-          print('Connection dispose hatası: $e');
+          print('⚠️ Connection dispose hatası: $e');
         }
         _connection = null;
       }
 
-      _isConnectionActive = false;
-      print('Serial bağlantı sessizce kapatıldı');
+      _connectionInputStream = null;
 
-      await Future.delayed(Duration(milliseconds: 300));
-    }
-    catch (e) {
-      print('⚠Serial bağlantı sessiz kapatma hatası: $e');
+      _isConnectionActive = false;
+      print('🔌 Serial bağlantı sessizce kapatıldı');
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    } catch (e) {
+      print('⚠️ Serial bağlantı sessiz kapatma hatası: $e');
       _connection = null;
+      _connectionInputStream = null;
       _isConnectionActive = false;
     }
   }
@@ -570,7 +563,7 @@ class BluetoothService {
   void _startConnectionMonitoring() {
     _connectionMonitorTimer?.cancel();
 
-    _connectionMonitorTimer = Timer.periodic(Duration(seconds: 5), (timer) async {
+    _connectionMonitorTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       if (_connection != null && !_connection!.isConnected) {
         print('🔌 Seri bağlantı koptu, yeniden bağlanılıyor...');
         _sendNotification('🔌 Seri bağlantı koptu, yeniden bağlanılıyor...', 'warning');
@@ -579,32 +572,31 @@ class BluetoothService {
           try {
             await connectToCsServer(connectedDeviceMacAddress!);
             _sendNotification('✅ Seri bağlantı yeniden kuruldu', 'success');
-          }
-          catch (e) {
-            print('Yeniden bağlantı hatası: $e');
-            _sendNotification('Seri bağlantı yeniden kurulamadı', 'error');
-            
+          } catch (e) {
+            print('❌ Yeniden bağlantı hatası: $e');
+            _sendNotification('❌ Seri bağlantı yeniden kurulamadı', 'error');
             _notificationController.add({
               'message': 'navigate_to_connect',
               'type': 'navigation',
               'timestamp': DateTime.now(),
             });
-
             timer.cancel();
             _handleDisconnection();
           }
         }
-        else {
-          _notificationController.add({
-            'message': 'navigate_to_connect',
-            'type': 'navigation',
-            'timestamp': DateTime.now(),
-          });
-
-          timer.cancel();
-          _handleDisconnection();
-        }
         return;
+      }
+
+      if (_connection != null && _connection!.isConnected) {
+        if (_connectionInputStream == null) {
+          print('⚠️ Stream kaybolmuş, yeniden oluşturuluyor...');
+          try {
+            _connectionInputStream = _connection!.input!.asBroadcastStream();
+            print('✅ Stream yeniden oluşturuldu');
+          } catch (e) {
+            print('❌ Stream yeniden oluşturulamadı: $e');
+          }
+        }
       }
 
       if (_connectedDevice != null) {
@@ -613,14 +605,11 @@ class BluetoothService {
             print('⚠️ Bluetooth bağlantı kopmuş tespit edildi!');
             String deviceName = getDeviceDisplayName(_connectedDevice!);
             _sendNotification('🔌 Bağlantı kesildi: $deviceName', 'warning');
-
-            
             _notificationController.add({
               'message': 'navigate_to_connect',
               'type': 'navigation',
               'timestamp': DateTime.now(),
             });
-
             timer.cancel();
             _handleDisconnection();
           }
@@ -654,14 +643,13 @@ class BluetoothService {
       _isConnectionActive = false;
       print('🔌 Serial bağlantı kapatıldı');
 
-      
       _notificationController.add({
         'message': 'navigate_to_connect',
         'type': 'navigation',
         'timestamp': DateTime.now(),
       });
 
-      await Future.delayed(Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 300));
     } catch (e) {
       print('⚠️ Serial bağlantı kapatma hatası: $e');
       _connection = null;
@@ -671,7 +659,7 @@ class BluetoothService {
 
   Future<void> discoverServicesAfterConnection(blue_plus.BluetoothDevice device) async {
     try {
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 500));
       await device.discoverServices();
     } catch (e) {
       print('⚠️ Hizmet keşfi hatası: $e');
@@ -691,7 +679,7 @@ class BluetoothService {
 
           _sendNotification('🔌 Bağlantı kesildi: $deviceName', 'warning');
 
-          await Future.delayed(Duration(milliseconds: 100));
+          await Future.delayed(const Duration(milliseconds: 100));
           _notificationController.add({
             'message': '🔌 Bağlantı kesildi: $deviceName',
             'type': 'warning',
@@ -730,19 +718,14 @@ class BluetoothService {
     }
   }
 
-
-
   Future<void> disconnect() async {
     print('🔌 Tüm Bluetooth & serial bağlantıları sıfırlanıyor...');
 
-    // Otomatik periyodik taramayı durdur (yeniden başlatacağız)
     _continuousScanTimer?.cancel();
     _continuousScanTimer = null;
 
-    // O anda devam eden tarama varsa durdur
     _stopScan();
 
-    // Bağlantı state dinleyicilerini iptal et
     _connectionSubscription?.cancel();
     _connectionSubscription = null;
 
@@ -752,10 +735,8 @@ class BluetoothService {
     _scanSubscription?.cancel();
     _scanSubscription = null;
 
-    // Serial bağlantıyı kapat (içeride _dataSubscription da iptal ediliyor)
     await _closeSerialConnection();
 
-    // BLE cihaz bağlantısını kes
     if (_connectedDevice != null) {
       try {
         final deviceName = getDeviceDisplayName(_connectedDevice!);
@@ -766,40 +747,29 @@ class BluetoothService {
       }
     }
 
-    // --- TÜM BAĞLANTI İLGİLİ STATE'LERİ SIFIRLA ---
+    _connectedDevice = null;
+    connectedDeviceMacAddress = null;
+    _isConnecting = false;
+    _isScanning = false;
+    _connectionLocked = false;
+    _isConnectionActive = false;
+    _connectionInputStream = null;
+    _disconnectionNotificationSent = false;
+    receivedVideoPath = null;
+    _veriIsRunning = false;
 
-    _connectedDevice = null;                 // Bağlı cihaz yok
-    connectedDeviceMacAddress = null;        // Static MAC bilgisi sıfır
-    _isConnecting = false;                   // Bağlanma süreci yok
-    _isScanning = false;                     // Şu an tarama yok
-    _connectionLocked = false;               // Kilit tamamen kaldırıldı
-    _isConnectionActive = false;             // Serial aktif değil
-    _connectionInputStream = null;           // Serial input stream temiz
-    _disconnectionNotificationSent = false;  // Bildirim flag sıfır
-    receivedVideoPath = null;                // Video path reset
-    _veriIsRunning = false;                  // veri() re-entrant flag reset
-
-    // Tarama sonuçlarını ve sinyal cache'ini temizle
     _scanResults.clear();
     _rssiValues.clear();
     _scanResultsController.add(_scanResults);
 
-    // Ekrandaki bağlantı durumunu "disconnected" yap
     _updateConnectionState(BluetoothServiceState.disconnected);
 
     _sendNotification('🔄 Bağlantı sıfırlandı', 'info');
 
-    // İlk initializeBluetooth çağrısındaki gibi tekrar sürekli taramayı başlat
     if (_bluetoothState == blue_plus.BluetoothAdapterState.on) {
       _startContinuousScanning();
     }
   }
-
-
-
-
-
-
 
   bool _disconnectionNotificationSent = false;
 
@@ -824,7 +794,7 @@ class BluetoothService {
     _closeSerialConnection();
     _updateConnectionState(BluetoothServiceState.disconnected);
 
-    Future.delayed(Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 2), () {
       _disconnectionNotificationSent = false;
     });
 
@@ -837,7 +807,6 @@ class BluetoothService {
     _connectionState = state;
     _connectionStateController.add(state);
   }
-
 
   Future<void> sendDataToDevice(String macAddress, Map<String, dynamic> data) async {
     try {
@@ -852,9 +821,8 @@ class BluetoothService {
       await _connection!.output.allSent;
       print('✅ Veri başarıyla gönderildi: $jsonData');
 
-      await Future.delayed(Duration(milliseconds: 100));
-    }
-    catch (e) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    } catch (e) {
       print('❌ Veri gönderme hatası: $e');
       _isConnectionActive = false;
       _sendNotification('❌ Veri gönderilemedi', 'error');
@@ -873,53 +841,53 @@ class BluetoothService {
         "type": "play_isimlik",
         "id": id,
       };
-    }
-    else if (tip == "bilgi") {
+    } else if (tip == "bilgi") {
       data = {
         "type": "play_bilgi",
         "id": id,
       };
-    }
-    else {
+    } else {
       print("Tip veri hatası $tip");
       return;
     }
 
     await sendDataToDevice(connectedDeviceMacAddress!, data);
-
-    //dinleme alanı
-
-
-
-
   }
 
-  Future<void> delete({
+  Future<bool> delete({
     required int id,
     required String tip,
   }) async {
     Map<String, dynamic> data = {};
 
-    if(tip == "isimlik"){
+    if (tip == "isimlik") {
       data = {
         "type": "delete_isimlik",
         "id": id,
       };
-    }
-    else if(tip == "bilgi"){
+    } else if (tip == "bilgi") {
       data = {
         "type": "delete_bilgi",
-        "id":id
+        "id": id
       };
     }
 
-    await sendDataToDevice(connectedDeviceMacAddress!, data);
-    print(data);
+    try {
+      await sendDataToDevice(connectedDeviceMacAddress!, data);
+      print(data);
 
-    await Future.delayed(Duration(seconds: 5));
+      await Future.delayed(const Duration(seconds: 3));
 
-    _dataSubscription?.cancel();
-    _dataSubscription = null;
+      _dataSubscription?.cancel();
+      _dataSubscription = null;
+
+      print('✅ Silme işlemi başarılı');
+      return true;
+    }
+    catch (e) {
+      print('❌ Silme işlemi başarısız: $e');
+      return false;
+    }
   }
 
   Future<void> isimlikAdd({
@@ -959,7 +927,7 @@ class BluetoothService {
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
         print("Video göndermek için bağlantı kuruluyor...");
         await connectToCsServer(connectedDeviceMacAddress!);
-        await Future.delayed(Duration(milliseconds: 1000));
+        await Future.delayed(const Duration(milliseconds: 1000));
       }
 
       File videoFile = File(videoPath);
@@ -983,12 +951,12 @@ class BluetoothService {
       await _connection!.output.allSent;
 
       print("⏳ C# hazırlanıyor...");
-      await Future.delayed(Duration(milliseconds: 1500));
+      await Future.delayed(const Duration(milliseconds: 1500));
 
       if (!_connection!.isConnected) {
         print("⚠️ Metadata gönderimi sonrası bağlantı koptu, yeniden bağlanılıyor...");
         await connectToCsServer(connectedDeviceMacAddress!);
-        await Future.delayed(Duration(milliseconds: 1000));
+        await Future.delayed(const Duration(milliseconds: 1000));
       }
 
       print("📤 Video gönderimi başlıyor...");
@@ -1009,7 +977,7 @@ class BluetoothService {
 
           try {
             await connectToCsServer(connectedDeviceMacAddress!);
-            await Future.delayed(Duration(milliseconds: 1500));
+            await Future.delayed(const Duration(milliseconds: 1500));
             consecutiveErrors = 0;
           } catch (e) {
             consecutiveErrors++;
@@ -1018,23 +986,21 @@ class BluetoothService {
               throw Exception("❌ Bağlantı ${maxConsecutiveErrors} kez yeniden kurulamadı!");
             }
             print("⚠️ Yeniden bağlanma denemesi ${consecutiveErrors}/${maxConsecutiveErrors}");
-            await Future.delayed(Duration(seconds: 2));
+            await Future.delayed(const Duration(seconds: 2));
             continue;
           }
         }
 
-        int bytesToSend = (offset + chunkSize > totalBytes)
-            ? totalBytes - offset
-            : chunkSize;
+        int bytesToSend =
+        (offset + chunkSize > totalBytes) ? totalBytes - offset : chunkSize;
 
         Uint8List chunk = fileBytes.sublist(offset, offset + bytesToSend);
 
         try {
           _connection!.output.add(chunk);
           await _connection!.output.allSent;
-          await Future.delayed(Duration(milliseconds: 5));
+          await Future.delayed(const Duration(milliseconds: 5));
           consecutiveErrors = 0;
-
         } catch (e) {
           print("❌ Chunk gönderme hatası (offset: $offset): $e");
           consecutiveErrors++;
@@ -1046,16 +1012,16 @@ class BluetoothService {
           try {
             print("🔄 Bağlantı yeniden kuruluyor (deneme ${consecutiveErrors})...");
             await connectToCsServer(connectedDeviceMacAddress!);
-            await Future.delayed(Duration(milliseconds: 1500));
+            await Future.delayed(const Duration(milliseconds: 1500));
 
             _connection!.output.add(chunk);
             await _connection!.output.allSent;
-            await Future.delayed(Duration(milliseconds: 5));
+            await Future.delayed(const Duration(milliseconds: 5));
 
             consecutiveErrors = 0;
           } catch (retryError) {
             print("❌ Yeniden deneme başarısız: $retryError");
-            await Future.delayed(Duration(milliseconds: 500));
+            await Future.delayed(const Duration(milliseconds: 500));
             continue;
           }
         }
@@ -1068,11 +1034,11 @@ class BluetoothService {
           lastProgressUpdate = currentProgress;
 
           Duration elapsed = DateTime.now().difference(startTime);
-          double speed = elapsed.inSeconds > 0
-              ? (offset / 1024 / 1024) / elapsed.inSeconds
-              : 0;
+          double speed =
+          elapsed.inSeconds > 0 ? (offset / 1024 / 1024) / elapsed.inSeconds : 0;
 
-          print("📤 ${percent.toStringAsFixed(1)}% (${(offset / 1024 / 1024).toStringAsFixed(2)} MB) - ${speed.toStringAsFixed(2)} MB/s");
+          print(
+              "📤 ${percent.toStringAsFixed(1)}% (${(offset / 1024 / 1024).toStringAsFixed(2)} MB) - ${speed.toStringAsFixed(2)} MB/s");
 
           if (onProgress != null) {
             onProgress(percent);
@@ -1081,9 +1047,8 @@ class BluetoothService {
       }
 
       Duration totalTime = DateTime.now().difference(startTime);
-      double avgSpeed = totalTime.inSeconds > 0
-          ? (totalBytes / 1024 / 1024) / totalTime.inSeconds
-          : 0;
+      double avgSpeed =
+      totalTime.inSeconds > 0 ? (totalBytes / 1024 / 1024) / totalTime.inSeconds : 0;
 
       print("\n✅ Video tamamen gönderildi: $name");
 
@@ -1128,7 +1093,7 @@ class BluetoothService {
       );
 
       receivedVideoPath = await completer.future.timeout(
-        Duration(seconds: 10),
+        const Duration(seconds: 10),
         onTimeout: () {
           print("⏰ Path bekleme zaman aşımı (10 saniye)");
           _dataSubscription?.cancel();
@@ -1137,19 +1102,18 @@ class BluetoothService {
         },
       );
 
-      print("📊 ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB - Süre: ${totalTime.inSeconds}s - Ort. Hız: ${avgSpeed.toStringAsFixed(2)} MB/s");
+      print(
+          "📊 ${(totalBytes / 1024 / 1024).toStringAsFixed(2)} MB - Süre: ${totalTime.inSeconds}s - Ort. Hız: ${avgSpeed.toStringAsFixed(2)} MB/s");
 
       if (receivedVideoPath != null) {
         _sendNotification('✅ Video başarıyla gönderildi', 'success');
         print("✅ Video path başarıyla alındı: $receivedVideoPath");
         return receivedVideoPath;
-      }
-      else {
+      } else {
         print("⚠️ Path alınamadı ama video gönderildi");
         _sendNotification('⚠️ Video gönderildi ama path alınamadı', 'warning');
         return null;
       }
-
     } catch (e, stackTrace) {
       print("❌ Video gönderme hatası: $e");
       print("StackTrace:\n$stackTrace");
@@ -1201,8 +1165,8 @@ class BluetoothService {
 
   Future<String> veri() async {
     if (_veriIsRunning) {
-      print("veri() zaten çalışıyor, bekleniyor...");
-      await Future.delayed(Duration(milliseconds: 500));
+      print("⏳ veri() zaten çalışıyor, bekleniyor...");
+      await Future.delayed(const Duration(milliseconds: 500));
       return veri();
     }
 
@@ -1213,8 +1177,15 @@ class BluetoothService {
       _dataSubscription = null;
 
       if (!_isConnectionActive || _connection == null || !_connection!.isConnected) {
+        print("⚠️ Bağlantı aktif değil, yeniden kuruluyor...");
         await connectToCsServer(connectedDeviceMacAddress!);
-        await Future.delayed(Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
+
+      if (_connectionInputStream == null) {
+        print("⚠️ Stream null, yeniden oluşturuluyor...");
+        _connectionInputStream = _connection!.input!.asBroadcastStream();
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       await sendDataToDevice(connectedDeviceMacAddress!, {
@@ -1246,12 +1217,12 @@ class BluetoothService {
           if (!completer.isCompleted) completer.completeError(e);
         },
         onDone: () {
-          print("Stream bitti");
+          print("⚠️ Stream kapandı");
           if (!completer.isCompleted) {
             if (allBytes.isNotEmpty) {
               completer.complete(utf8.decode(allBytes).trim());
             } else {
-              completer.completeError(Exception("Veri alınamadı"));
+              completer.completeError(Exception("Veri alınamadı - stream kapandı"));
             }
           }
         },
@@ -1261,26 +1232,31 @@ class BluetoothService {
       _dataSubscription = sub;
 
       return await completer.future.timeout(
-          Duration(seconds: 30),
-          onTimeout: () {
-            print("⏰ Timeout! Alınan veri: ${allBytes.length} bytes");
-            sub.cancel();
-            throw TimeoutException("full_data yanıtı alınamadı");
-          }
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print("⏰ Timeout! Alınan veri: ${allBytes.length} bytes");
+          sub.cancel();
+
+          _connectionInputStream = null;
+
+          throw TimeoutException("full_data yanıtı alınamadı");
+        },
       );
+    } catch (e) {
+      print("❌ veri() hatası: $e");
+
+      _connectionInputStream = null;
+      rethrow;
     } finally {
       _veriIsRunning = false;
     }
   }
 
-
-
   Future<Map<String, dynamic>> veriWithImages() async {
     try {
       String jsonStr = await veri();
 
-      print('📥 Gelen veri önizleme: ${jsonStr.substring(0, math.min(500, jsonStr
-          .length))}');
+      print('📥 Gelen veri önizleme: ${jsonStr.substring(0, math.min(500, jsonStr.length))}');
       print('📊 Toplam uzunluk: ${jsonStr.length}');
 
       jsonStr = jsonStr.trim();
@@ -1295,21 +1271,20 @@ class BluetoothService {
         try {
           Uint8List decodedBytes = base64Decode(jsonStr);
           String decodedString = utf8.decode(decodedBytes);
-          print('✅ Base64 decode başarılı, decoded veri: ${decodedString
-              .substring(0, math.min(200, decodedString.length))}');
+          print(
+              '✅ Base64 decode başarılı, decoded veri: ${decodedString.substring(0, math.min(200, decodedString.length))}');
 
           if (decodedString.startsWith('{') || decodedString.startsWith('[')) {
             parsedData = jsonDecode(decodedString);
           } else {
-            throw FormatException('Base64 decode edildi ancak JSON formatında değil');
+            throw const FormatException('Base64 decode edildi ancak JSON formatında değil');
           }
         } catch (e) {
           print('❌ Base64 decode başarısız: $e');
 
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
 
           return await veriWithImages();
-
         }
       }
 
@@ -1324,7 +1299,6 @@ class BluetoothService {
             if (bilgiList[i] is Map<String, dynamic> &&
                 bilgiList[i]['thumbnailBase64'] != null &&
                 bilgiList[i]['thumbnailBase64'].toString().isNotEmpty) {
-
               String base64String = bilgiList[i]['thumbnailBase64'].toString();
               print('🖼️ Öğe $i: Thumbnail base64 uzunluğu: ${base64String.length}');
 
@@ -1381,8 +1355,7 @@ class BluetoothService {
       await sendDataToDevice(connectedDeviceMacAddress!, data);
       print("Parlaklık başarıyla eklendi");
       _sendNotification('✅ Parlaklık ayarlandı', 'success');
-    }
-    catch (e) {
+    } catch (e) {
       print("Parlaklık ekleme hatası: $e");
       _sendNotification('❌ Parlaklık ayarlanamadı', 'error');
       rethrow;
@@ -1401,7 +1374,6 @@ class BluetoothService {
       await sendDataToDevice(connectedDeviceMacAddress!, data);
       print("Volume başarıyla eklendi");
       _sendNotification('✅ Ses seviyesi ayarlandı', 'success');
-
     } catch (e) {
       print("Volume ekleme hatası: $e");
       _sendNotification('❌ Ses seviyesi ayarlanamadı', 'error');
@@ -1436,7 +1408,6 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
   bool _isScanning = false;
   bool _isConnecting = false;
 
-
   StreamSubscription<Map<String, dynamic>>? _notificationSubscription;
 
   @override
@@ -1445,13 +1416,11 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
     _bluetoothService.initializeBluetooth();
     _setupListeners();
 
-
     _notificationSubscription = _bluetoothService.notificationStream.listen((notification) {
       if (!mounted) return;
 
       String message = notification['message'];
       String type = notification['type'];
-
 
       Color backgroundColor;
       IconData icon;
@@ -1474,24 +1443,28 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
           icon = Icons.info;
       }
 
+      if (type == 'navigation' && message == 'navigate_to_management') {
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               Icon(icon, color: Colors.white),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   message,
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
           backgroundColor: backgroundColor,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
@@ -1524,8 +1497,8 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bluetooth Cihazları'),
-        backgroundColor: Color(0xFF1D7269),
+        title: const Text('Bluetooth Cihazları'),
+        backgroundColor: const Color(0xFF1D7269),
         actions: [
           IconButton(
             icon: Icon(_isScanning ? Icons.stop : Icons.search),
@@ -1564,20 +1537,20 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
+          const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text(
             'Bluetooth Kapalı',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 8),
-          Text('Bluetooth\'u açarak cihazları görebilirsiniz'),
-          SizedBox(height: 16),
+          const SizedBox(height: 8),
+          const Text('Bluetooth\'u açarak cihazları görebilirsiniz'),
+          const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
               _bluetoothService.initializeBluetooth();
             },
-            child: Text('Bluetooth\'u Aç'),
+            child: const Text('Bluetooth\'u Aç'),
           ),
         ],
       ),
@@ -1617,7 +1590,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
 
         return Container(
           width: double.infinity,
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
           color: backgroundColor.withOpacity(0.1),
           child: Row(
             children: [
@@ -1625,7 +1598,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
                 _getConnectionIcon(connectionState),
                 color: backgroundColor,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   statusText,
@@ -1667,7 +1640,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: const [
             Icon(Icons.devices, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text('Cihaz bulunamadı'),
@@ -1705,7 +1678,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
         ],
       ),
       trailing: _isConnecting
-          ? CircularProgressIndicator()
+          ? const CircularProgressIndicator()
           : ElevatedButton(
         onPressed: () => _handleDeviceConnection(device, isConnected),
         style: ElevatedButton.styleFrom(
@@ -1713,7 +1686,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
         ),
         child: Text(
           isConnected ? 'Bağlantıyı Kes' : 'Bağlan',
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
         ),
       ),
       onTap: () => _showDeviceDetails(device),
@@ -1748,7 +1721,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Cihaz Detayları'),
+        title: const Text('Cihaz Detayları'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1763,7 +1736,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Kapat'),
+            child: const Text('Kapat'),
           ),
         ],
       ),
@@ -1782,7 +1755,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
         _isScanning = true;
       });
 
-      Future.delayed(Duration(seconds: 10), () {
+      Future.delayed(const Duration(seconds: 10), () {
         if (mounted && _isScanning) {
           _bluetoothService._stopScan();
           setState(() {

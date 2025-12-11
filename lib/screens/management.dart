@@ -90,6 +90,7 @@ class _ManagementState extends State<Management> {
   bool _hasError = false;
   String _errorMessage = '';
   StreamSubscription<Map<String, dynamic>>? _navigationSubscription;
+  StreamSubscription<BluetoothServiceState>? _connectionStateSubscription;
 
   int? _activeSpeakerIndex;
   int? _activeContentIndex;
@@ -109,20 +110,38 @@ class _ManagementState extends State<Management> {
         );
       }
     });
+
+    _connectionStateSubscription = _bluetoothService.connectionStateStream.listen((state) {
+      if (!mounted) return;
+
+      if (state == BluetoothServiceState.connected) {
+        print('🔄 Bağlantı yeniden kuruldu, veriler yeniden yükleniyor...');
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            _loadSharedData();
+          }
+        });
+      }
+    });
   }
 
-  @override
-  void dispose() {
-    _navigationSubscription?.cancel();
-    super.dispose();
+  void _setActiveSpeakerIndex(int? index) {
+    setState(() {
+      _activeSpeakerIndex = index;
+    });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_cachedData == null && !_isLoadingData && !_hasError) {
-      _loadSharedData();
-    }
+  void _setActiveContentIndex(int? index) {
+    setState(() {
+      _activeContentIndex = index;
+    });
+  }
+
+  void _resetAllActiveItems() {
+    setState(() {
+      _activeSpeakerIndex = null;
+      _activeContentIndex = null;
+    });
   }
 
   Future<void> _loadSharedData() async {
@@ -154,6 +173,8 @@ class _ManagementState extends State<Management> {
         _hasError = true;
         _errorMessage = e.toString();
         _cachedData = null;
+        _activeSpeakerIndex = null;
+        _activeContentIndex = null;
       });
 
       if (mounted) {
@@ -171,25 +192,6 @@ class _ManagementState extends State<Management> {
     }
   }
 
-  void _setActiveSpeakerIndex(int? index) {
-    setState(() {
-      _activeSpeakerIndex = index;
-
-      if (index != null) {
-        _activeContentIndex = null;
-      }
-    });
-  }
-
-  void _setActiveContentIndex(int? index) {
-    setState(() {
-      _activeContentIndex = index;
-
-      if (index != null) {
-        _activeSpeakerIndex = null;
-      }
-    });
-  }
 
   Widget _buildErrorWidget() {
     final languageProvider = Provider.of<LanguageProvider>(context);
@@ -494,6 +496,31 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   }
 
   Future<void> _deleteSpeaker(int index) async {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Expanded(
+                  child: Text(
+                    languageProvider.getTranslation('deleting_please_wait') ?? 'Siliniyor, lütfen bekleyin...',
+                    style: TextStyle(fontFamily: 'brandontext'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
     if (widget.activeIndex == index) {
       widget.onActiveIndexChanged(null);
@@ -502,21 +529,63 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
     }
 
     try {
-      await _bluetoothService.delete(id: index, tip: "isimlik");
+      bool isDeleted = await _bluetoothService.delete(id: index, tip: "isimlik");
 
-      setState(() {
-        _speakers.removeAt(index);
-      });
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
-      final parentState = context.findAncestorStateOfType<_ManagementState>();
-      parentState?._loadSharedData();
+      if (isDeleted) {
+        setState(() {
+          _speakers.removeAt(index);
+        });
 
+        final parentState = context.findAncestorStateOfType<_ManagementState>();
+        await parentState?._loadSharedData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                languageProvider.getTranslation('speaker_deleted_success') ?? 'Konuşmacı başarıyla silindi',
+                style: TextStyle(fontFamily: 'brandontext'),
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                languageProvider.getTranslation('delete_failed') ?? 'Silme işlemi başarısız',
+                style: TextStyle(fontFamily: 'brandontext'),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${Provider.of<LanguageProvider>(context, listen: false).getTranslation('error')}: $e', style: TextStyle(fontFamily: 'brandontext')),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
-      ));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${languageProvider.getTranslation('error')}: $e',
+              style: TextStyle(fontFamily: 'brandontext'),
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -556,21 +625,20 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       print("id:$id tip:$tip isPlaying:$currentIsPlaying");
 
       final managementState = context.findAncestorStateOfType<_ManagementState>();
-      if (managementState != null && managementState._activeContentIndex != null) {
-        int activeContentId = managementState._activeContentIndex!;
-        await _bluetoothService.playStatus(id: activeContentId, tip: "bilgi");
-        managementState._setActiveContentIndex(null);
-
-        final contentState = context.findAncestorStateOfType<_ContentManagementState>();
-        contentState?._updateContentsPlayState();
-      }
-
-      await _bluetoothService.playStatus(id: id, tip: tip);
 
       if (currentIsPlaying) {
+        await _bluetoothService.playStatus(id: id, tip: tip);
         widget.onActiveIndexChanged(null);
         managementState?._setActiveSpeakerIndex(null);
-      } else {
+      }
+      else {
+
+        if (widget.activeIndex != null && widget.activeIndex != index) {
+          int previousActiveSpeakerId = widget.activeIndex!;
+          await _bluetoothService.playStatus(id: previousActiveSpeakerId, tip: tip);
+        }
+
+        await _bluetoothService.playStatus(id: id, tip: tip);
         widget.onActiveIndexChanged(index);
         managementState?._setActiveSpeakerIndex(index);
       }
@@ -1268,6 +1336,31 @@ class _ContentManagementState extends State<ContentManagement> {
   }
 
   Future<void> _deleteContent(int index) async {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Expanded(
+                  child: Text(
+                    languageProvider.getTranslation('deleting_please_wait') ?? 'Siliniyor, lütfen bekleyin...',
+                    style: TextStyle(fontFamily: 'brandontext'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
     if (widget.activeIndex == index) {
       widget.onActiveIndexChanged(null);
@@ -1276,22 +1369,63 @@ class _ContentManagementState extends State<ContentManagement> {
     }
 
     try {
-      await _bluetoothService.delete(id: index, tip: "bilgi");
-
-      setState(() {
-        _contents.removeAt(index);
-      });
+      bool isDeleted = await _bluetoothService.delete(id: index, tip: "bilgi");
 
       if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (isDeleted) {
+        setState(() {
+          _contents.removeAt(index);
+        });
+
         final parentState = context.findAncestorStateOfType<_ManagementState>();
         await parentState?._loadSharedData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                languageProvider.getTranslation('content_deleted_success') ?? 'İçerik başarıyla silindi',
+                style: TextStyle(fontFamily: 'brandontext'),
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                languageProvider.getTranslation('delete_failed') ?? 'Silme işlemi başarısız',
+                style: TextStyle(fontFamily: 'brandontext'),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${Provider.of<LanguageProvider>(context, listen: false).getTranslation('error')}: $e', style: TextStyle(fontFamily: 'brandontext')),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
-      ));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${languageProvider.getTranslation('error')}: $e',
+              style: TextStyle(fontFamily: 'brandontext'),
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -1300,11 +1434,11 @@ class _ContentManagementState extends State<ContentManagement> {
     final currentIsPlaying = _contents[index]['isPlaying'] ?? false;
     var videoPath = _contents[index]['videoPath'] as String?;
     var title = _contents[index]['title'] as String?;
+
     print('videoPath değeri: "$videoPath"');
     print("title $title");
 
     bool video = videoPath == null || videoPath.isEmpty;
-
     bool gelentitle = title == null || title == "Toplantı Konusu" ||
         title.trim().isEmpty ||
         title == languageProvider.getTranslation('meeting_topic');
@@ -1313,8 +1447,7 @@ class _ContentManagementState extends State<ContentManagement> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            languageProvider.getTranslation('video_and_title_missing_warning') ??
-                '',
+            languageProvider.getTranslation('video_and_title_missing_warning') ?? '',
             style: TextStyle(fontFamily: 'brandontext'),
           ),
           backgroundColor: Colors.red,
@@ -1323,48 +1456,36 @@ class _ContentManagementState extends State<ContentManagement> {
       );
       return;
     }
+
     try {
       int id = index;
       String tip = "bilgi";
 
       print("id:$id tip:$tip isPlaying:$currentIsPlaying");
 
-
       final managementState = context.findAncestorStateOfType<_ManagementState>();
-      if (managementState != null && managementState._activeSpeakerIndex != null) {
-
-        int activeSpeakerId = managementState._activeSpeakerIndex!;
-
-
-        await _bluetoothService.playStatus(id: activeSpeakerId, tip: "isimlik");
-
-
-        managementState._setActiveSpeakerIndex(null);
-
-
-        final speakerState = context.findAncestorStateOfType<_SpeakerManagementState>();
-        speakerState?._updateSpeakersPlayState();
-      }
-
-
-      await _bluetoothService.playStatus(id: id, tip: tip);
-
 
       if (currentIsPlaying) {
-
+        await _bluetoothService.playStatus(id: id, tip: tip);
         widget.onActiveIndexChanged(null);
         managementState?._setActiveContentIndex(null);
-      } else {
+      }
+      else {
+        if (widget.activeIndex != null && widget.activeIndex != index) {
+          int previousActiveContentId = widget.activeIndex!;
+          await _bluetoothService.playStatus(id: previousActiveContentId, tip: tip);
+        }
 
+        await _bluetoothService.playStatus(id: id, tip: tip);
         widget.onActiveIndexChanged(index);
         managementState?._setActiveContentIndex(index);
       }
 
-    }
-    catch (e) {
+    } catch (e) {
       print("Play/Pause hatası: $e");
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${languageProvider.getTranslation('error')}: $e', style: TextStyle(fontFamily: 'brandontext')),
+        content: Text('${languageProvider.getTranslation('error')}: $e',
+            style: TextStyle(fontFamily: 'brandontext')),
         backgroundColor: Colors.red,
         duration: Duration(seconds: 2),
       ));
@@ -2658,14 +2779,14 @@ class _EditableContentCardState extends State<EditableContentCard> {
                             setState(() {});
                           },
                           style: TextStyle(
-                            fontSize: widget.isTablet ? 15.5 : 13.5,
+                            fontSize: widget.isTablet ? 17.0 : 15,
                             fontWeight: FontWeight.w400,
                             color: _titleController.text == widget.content['title']
                                 ? Colors.grey[600]
                                 : (borderColor == const Color(0xFF5E6676)
                                 ? const Color(0xFF000000)
                                 : const Color(0xFFA24D00)),
-                            height: 1.1,
+                            height: 0.94,
                             fontFamily: 'brandontext',
                           ),
                           decoration: const InputDecoration(
@@ -2678,12 +2799,12 @@ class _EditableContentCardState extends State<EditableContentCard> {
                             : Text(
                           widget.content['title'] as String,
                           style: TextStyle(
-                            fontSize: widget.isTablet ? 15.5 : 13.5,
+                            fontSize: widget.isTablet ? 17.0 : 15,
                             fontWeight: FontWeight.w400,
                             color: borderColor == const Color(0xFF5E6676)
                                 ? const Color(0xFF414A5D)
                                 : const Color(0xFFA24D00),
-                            height: 1.1,
+                            height: 0.94,
                             fontFamily: 'brandontext',
                           ),
                           maxLines: 2,
