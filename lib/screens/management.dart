@@ -397,8 +397,11 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
   void _updateSpeakersPlayState() {
     setState(() {
       for (int i = 0; i < _speakers.length; i++) {
-        bool isActiveFromServer = _speakers[i]['isActive'] as bool? ?? false;
-        _speakers[i]['isPlaying'] = (widget.activeIndex == i) || isActiveFromServer;
+        if (widget.activeIndex == i) {
+          _speakers[i]['isPlaying'] = true;
+        } else {
+          _speakers[i]['isPlaying'] = false;
+        }
       }
     });
   }
@@ -636,41 +639,49 @@ class _SpeakerManagementState extends State<SpeakerManagement> {
       if (currentIsPlaying) {
         await _bluetoothService.playStatus(id: id, tip: tip);
 
-        setState(() {
-          _speakers[index]['isPlaying'] = false;
-        });
+        if (mounted) {
+          setState(() {
+            _speakers[index]['isPlaying'] = false;
+          });
 
-        widget.onActiveIndexChanged(null);
-        managementState?._setActiveSpeakerIndex(null);
+          widget.onActiveIndexChanged(null);
+          managementState?._setActiveSpeakerIndex(null);
+        }
       }
       else {
-        if (widget.activeIndex != null && widget.activeIndex != index) {
-          int previousActiveSpeakerId = widget.activeIndex!;
-          await _bluetoothService.playStatus(id: previousActiveSpeakerId, tip: tip);
-
-          setState(() {
-            _speakers[previousActiveSpeakerId]['isPlaying'] = false;
-          });
+        for (int i = 0; i < _speakers.length; i++) {
+          if (i != index && _speakers[i]['isPlaying'] == true) {
+            await _bluetoothService.playStatus(id: i, tip: tip);
+            if (mounted) {
+              setState(() {
+                _speakers[i]['isPlaying'] = false;
+              });
+            }
+          }
         }
 
         await _bluetoothService.playStatus(id: id, tip: tip);
 
-        setState(() {
-          _speakers[index]['isPlaying'] = true;
-        });
+        if (mounted) {
+          setState(() {
+            _speakers[index]['isPlaying'] = true;
+          });
 
-        widget.onActiveIndexChanged(index);
-        managementState?._setActiveSpeakerIndex(index);
+          widget.onActiveIndexChanged(index);
+          managementState?._setActiveSpeakerIndex(index);
+        }
       }
 
     } catch (e) {
       print("Play/Pause hatası: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${languageProvider.getTranslation('error')}: $e',
-            style: TextStyle(fontFamily: 'brandontext')),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${languageProvider.getTranslation('error')}: $e',
+              style: TextStyle(fontFamily: 'brandontext')),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ));
+      }
     }
   }
 
@@ -948,8 +959,7 @@ class _ContentManagementState extends State<ContentManagement> {
   void _updateContentsPlayState() {
     setState(() {
       for (int i = 0; i < _contents.length; i++) {
-        bool buttonStatusFromServer = _contents[i]['buttonStatus'] as bool? ?? false;
-        _contents[i]['isPlaying'] = (widget.activeIndex == i) || buttonStatusFromServer;
+        _contents[i]['isPlaying'] = (widget.activeIndex == i);
       }
     });
   }
@@ -1503,14 +1513,14 @@ class _ContentManagementState extends State<ContentManagement> {
         managementState?._setActiveContentIndex(null);
       }
       else {
-        if (widget.activeIndex != null && widget.activeIndex != index) {
-          int previousActiveContentId = widget.activeIndex!;
-          await _bluetoothService.playStatus(id: previousActiveContentId, tip: tip);
-
-          setState(() {
-            _contents[previousActiveContentId]['isPlaying'] = false;
-            _contents[previousActiveContentId]['buttonStatus'] = false;
-          });
+        for (int i = 0; i < _contents.length; i++) {
+          if (i != index && _contents[i]['isPlaying'] == true) {
+            await _bluetoothService.playStatus(id: i, tip: tip);
+            setState(() {
+              _contents[i]['isPlaying'] = false;
+              _contents[i]['buttonStatus'] = false;
+            });
+          }
         }
 
         await _bluetoothService.playStatus(id: id, tip: tip);
@@ -1789,8 +1799,12 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
     if (widget.isPlaying != oldWidget.isPlaying) {
       setState(() {
         _isPlaying = widget.isPlaying;
+        if (!widget.isPlaying) {
+          _countdownTimer?.cancel();
+        }
       });
     }
+
     if (widget.isActive != oldWidget.isActive) {
       setState(() {
         _isSwitchActive = widget.isActive;
@@ -1803,10 +1817,12 @@ class _EditableSpeakerCardState extends State<EditableSpeakerCard> {
       });
     }
 
-    if (!widget.isPlaying && _isPlaying) {
+    if (widget.speaker['isPlaying'] != oldWidget.speaker['isPlaying']) {
       setState(() {
-        _isPlaying = false;
-        _countdownTimer?.cancel();
+        _isPlaying = widget.speaker['isPlaying'] ?? false;
+        if (!_isPlaying) {
+          _countdownTimer?.cancel();
+        }
       });
     }
   }
